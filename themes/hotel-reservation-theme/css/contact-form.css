@@ -65,7 +65,7 @@
   padding: 11px;
 }
 .htl-contact-page  .contact_type_ul li:hover, .htl-contact-page  .contact_type_ul li:focus, .htl-contact-page  .contact_type_ul li:active {
-  background-color: #379bf0;
+  background-color: #B84D29;
   color: #FFFFFF;
 }
 .htl-contact-page .contact_btn {
@@ -118,7 +118,7 @@
   border-bottom: 1px solid rgba(0, 0, 0, 1);
 }
 .htl-contact-page span.action {
-  background:#379bf0!important;
+  background:#B84D29!important;
 }
 .htl-contact-page .hotel-address-container {
   border-radius: 4px;
@@ -193,7 +193,7 @@
   font-weight: 400;
 }
 .contact-subdiv p i {
-  color: #2F85CE;
+  color: #B84D29;
 }
 .contact_input {
   color: #9a9a9a;
