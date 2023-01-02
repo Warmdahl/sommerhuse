@@ -43,6 +43,9 @@ class ImageTypeCore extends ObjectModel
     /** @var int Apply to categories */
     public $categories;
 
+    /** @var int Apply to hotels */
+    public $hotels;
+
     /** @var int Apply to manufacturers */
     public $manufacturers;
 
@@ -67,6 +70,7 @@ class ImageTypeCore extends ObjectModel
             'height' =>        array('type' => self::TYPE_INT, 'validate' => 'isImageSize', 'required' => true),
             'categories' =>    array('type' => self::TYPE_BOOL, 'validate' => 'isBool'),
             'products' =>        array('type' => self::TYPE_BOOL, 'validate' => 'isBool'),
+            'hotels' =>        array('type' => self::TYPE_BOOL, 'validate' => 'isBool'),
             'manufacturers' =>    array('type' => self::TYPE_BOOL, 'validate' => 'isBool'),
             'suppliers' =>        array('type' => self::TYPE_BOOL, 'validate' => 'isBool'),
             'scenes' =>        array('type' => self::TYPE_BOOL, 'validate' => 'isBool'),
@@ -108,6 +112,19 @@ class ImageTypeCore extends ObjectModel
             self::$images_types_cache[$type] = Db::getInstance()->executeS($query);
         }
         return self::$images_types_cache[$type];
+    }
+
+    /**
+     * Get image type properties from type name
+     *
+     * @param string $type_name Name
+     * @return array Image type definition
+     */
+    public static function getByName($name)
+    {
+        return Db::getInstance()->getRow(
+            'SELECT `id_image_type`, `width`, `height` FROM `'._DB_PREFIX_.'image_type` WHERE `name` like "'.pSQL($name).'"'
+        );
     }
 
     /**
@@ -169,7 +186,7 @@ class ImageTypeCore extends ObjectModel
         $name_without_theme_name = str_replace(array('_'.$theme_name, $theme_name.'_'), '', $name);
 
         //check if the theme name is already in $name if yes only return $name
-        if (strstr($name, $theme_name) && self::getByNameNType($name)) {
+        if ($theme_name !== null && strstr($name, $theme_name) && self::getByNameNType($name)) {
             return $name;
         } elseif (self::getByNameNType($name_without_theme_name.'_'.$theme_name)) {
             return $name_without_theme_name.'_'.$theme_name;

@@ -1,9 +1,0 @@
-
-[/{shop_url}] 
-
-Hej {firstname} {lastname}, 
-
-{message} 
-
-Webshop system: Webkul [https://webkul.com] 
-

@@ -142,8 +142,8 @@ class HTMLTemplateInvoiceCore extends HTMLTemplate
      */
     public function getContent()
     {
-        $invoiceAddressPatternRules = Tools::jsonDecode(Configuration::get('PS_INVCE_INVOICE_ADDR_RULES'), true);
-        $deliveryAddressPatternRules = Tools::jsonDecode(Configuration::get('PS_INVCE_DELIVERY_ADDR_RULES'), true);
+        $invoiceAddressPatternRules = json_decode(Configuration::get('PS_INVCE_INVOICE_ADDR_RULES'), true);
+        $deliveryAddressPatternRules = json_decode(Configuration::get('PS_INVCE_DELIVERY_ADDR_RULES'), true);
 
         $invoice_address = new Address((int)$this->order->id_address_invoice);
         $country = new Country((int)$invoice_address->id_country);
@@ -402,15 +402,14 @@ class HTMLTemplateInvoiceCore extends HTMLTemplate
                             $cart_htl_data[$type_key]['date_diff'][$date_join]['num_rm'] += 1;
 
                             $num_days = $cart_htl_data[$type_key]['date_diff'][$date_join]['num_days'];
-                            $var_quant = (int)$cart_htl_data[$type_key]['date_diff'][$date_join]['num_rm'];
 
                             $cart_htl_data[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_excl'] = $data_v['total_price_tax_excl']/$num_days;
                             $cart_htl_data[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_incl'] = $data_v['total_price_tax_excl']/$num_days;
+                            $cart_htl_data[$type_key]['date_diff'][$date_join]['avg_paid_unit_price_tax_excl'] += $cart_htl_data[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_excl'];
 
-                            $cart_htl_data[$type_key]['date_diff'][$date_join]['amount'] = $data_v['total_price_tax_excl']*$var_quant;
+                            $cart_htl_data[$type_key]['date_diff'][$date_join]['amount'] += $data_v['total_price_tax_excl'];
 
                             // For order refund
-                            $cart_htl_data[$type_key]['date_diff'][$date_join]['stage_name'] = $stage_name;
                             $cart_htl_data[$type_key]['date_diff'][$date_join]['id_room'] = $data_v['id_room'];
                         } else {
                             $cart_htl_data[$type_key]['date_diff'][$date_join]['extra_demands'] = $objBookingDemand->getRoomTypeBookingExtraDemands(
@@ -444,16 +443,17 @@ class HTMLTemplateInvoiceCore extends HTMLTemplate
                             $num_days = $obj_htl_bk_dtl->getNumberOfDays($data_v['date_from'], $data_v['date_to']);
 
                             $cart_htl_data[$type_key]['date_diff'][$date_join]['num_rm'] = 1;
-                            $cart_htl_data[$type_key]['date_diff'][$date_join]['data_form'] = $data_v['date_from'];
-                            $cart_htl_data[$type_key]['date_diff'][$date_join]['data_to'] = $data_v['date_to'];
+                            $cart_htl_data[$type_key]['date_diff'][$date_join]['data_form'] = Tools::displayDate($data_v['date_from']);
+                            $cart_htl_data[$type_key]['date_diff'][$date_join]['data_to'] = Tools::displayDate($data_v['date_to']);
                             $cart_htl_data[$type_key]['date_diff'][$date_join]['num_days'] = $num_days;
 
                             $cart_htl_data[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_excl'] = $data_v['total_price_tax_excl']/$num_days;
                             $cart_htl_data[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_incl'] = $data_v['total_price_tax_excl']/$num_days;
+                            $cart_htl_data[$type_key]['date_diff'][$date_join]['avg_paid_unit_price_tax_excl'] = $cart_htl_data[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_excl'];
+
                             $cart_htl_data[$type_key]['date_diff'][$date_join]['amount'] = $data_v['total_price_tax_excl'];
 
                             // For order refund
-                            $cart_htl_data[$type_key]['date_diff'][$date_join]['stage_name'] = $stage_name;
                             $cart_htl_data[$type_key]['date_diff'][$date_join]['id_room'] = $data_v['id_room'];
                             $totalDemandsPriceTE += $cart_htl_data[$type_key]['date_diff'][$date_join]['extra_demands_price_te'];
                             $totalDemandsPriceTI += $cart_htl_data[$type_key]['date_diff'][$date_join]['extra_demands_price_ti'];
@@ -470,6 +470,11 @@ class HTMLTemplateInvoiceCore extends HTMLTemplate
                         } else {
                             $cart_htl_data[$type_key]['order_detail_tax_label'] = HTMLTemplateInvoice::l('No tax');
                         }
+                    }
+
+                    // calculate averages now
+                    foreach ($cart_htl_data[$type_key]['date_diff'] as $key => &$value) {
+                        $value['avg_paid_unit_price_tax_excl'] = Tools::ps_round($value['avg_paid_unit_price_tax_excl'] / $value['num_rm'], 6);
                     }
                 }
                 unset($tax_temp);
@@ -532,10 +537,7 @@ class HTMLTemplateInvoiceCore extends HTMLTemplate
     {
         $debug = Tools::getValue('debug');
 
-        $address = new Address((int)$this->order->{Configuration::get('PS_TAX_ADDRESS_TYPE')});
-        $tax_exempt = Configuration::get('VATNUMBER_MANAGEMENT')
-                            && !empty($address->vat_number)
-                            && $address->id_country != Configuration::get('VATNUMBER_COUNTRY');
+        $address = new Address((int)$this->order->id_address_tax);
         $carrier = new Carrier($this->order->id_carrier);
 
         // code to send name of the taxes applied on the order to show names od taxes in the invoice for GST
@@ -560,7 +562,6 @@ class HTMLTemplateInvoiceCore extends HTMLTemplate
 
         $data = array(
             'showTaxName' => $showTaxName,
-            'tax_exempt' => $tax_exempt,
             'use_one_after_another_method' => $this->order_invoice->useOneAfterAnotherTaxComputationMethod(),
             'display_tax_bases_in_breakdowns' => $this->order_invoice->displayTaxBasesInProductTaxesBreakdown(),
             'product_tax_breakdown' => $this->order_invoice->getProductTaxesBreakdown($this->order),

@@ -36,7 +36,7 @@ class AdminAddressesControllerCore extends AdminController
     {
         $this->bootstrap = true;
         $this->required_database = true;
-        $this->required_fields = array('company','address2', 'postcode', 'other', 'phone', 'phone_mobile', 'vat_number', 'dni');
+        $this->required_fields = array('company', 'address2', 'postcode', 'other', 'phone', 'phone_mobile', 'dni');
         $this->table = 'address';
         $this->className = 'Address';
         $this->lang = false;
@@ -217,13 +217,6 @@ class AdminAddressesControllerCore extends AdminController
                     'col' => '4',
                     'hint' => $this->l('Invalid characters:').' &lt;&gt;;=#{}'
                 );
-                $temp_fields[] = array(
-                    'type' => 'text',
-                    'label' => $this->l('VAT number'),
-                    'col' => '2',
-                    'name' => 'vat_number',
-                    'required' => in_array('vat_number', $required_fields)
-                );
             } elseif ($addr_field_item == 'lastname') {
                 if (isset($customer) &&
                     !Tools::isSubmit('submit'.strtoupper($this->table)) &&
@@ -351,11 +344,23 @@ class AdminAddressesControllerCore extends AdminController
         return parent::renderForm();
     }
 
+    // public function postProcess()
+    // {
+
+    //     $address = new Address();
+    //     $this->errors = $address->validateController();
+
+    //     return parent::postProcess();
+    // }
+
     public function processSave()
     {
         if (Tools::getValue('submitFormAjax')) {
             $this->redirect_after = false;
         }
+
+        $address = new Address();
+        $this->errors = $address->validateController();
 
         // Transform e-mail in id_customer for parent processing
         if (Validate::isEmail(Tools::getValue('email'))) {
@@ -495,7 +500,7 @@ class AdminAddressesControllerCore extends AdminController
             $customer = Customer::searchByName($email);
             if (!empty($customer)) {
                 $customer = $customer['0'];
-                echo Tools::jsonEncode(array('infos' => pSQL($customer['firstname']).'_'.pSQL($customer['lastname']).'_'.pSQL($customer['company'])));
+                echo json_encode(array('infos' => pSQL($customer['firstname']).'_'.pSQL($customer['lastname']).'_'.pSQL($customer['company']).'_'.pSQL($customer['id_customer'])));
             }
         }
         die;

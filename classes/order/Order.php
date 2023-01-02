@@ -40,6 +40,9 @@ class OrderCore extends ObjectModel
     /** @var int Invoice address id */
     public $id_address_invoice;
 
+    /** @var int Hotel address id */
+    public $id_address_tax;
+
     public $id_shop_group;
 
     public $id_shop;
@@ -196,6 +199,7 @@ class OrderCore extends ObjectModel
         'fields' => array(
             'id_address_delivery' =>        array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
             'id_address_invoice' =>        array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
+            'id_address_tax' =>        array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
             'id_cart' =>                    array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
             'id_currency' =>                array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
             'id_shop_group' =>                array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId'),
@@ -256,7 +260,6 @@ class OrderCore extends ObjectModel
             'id_currency' => array('xlink_resource'=> 'currencies'),
             'id_lang' => array('xlink_resource'=> 'languages'),
             'id_customer' => array('xlink_resource'=> 'customers'),
-            'id_carrier' => array('xlink_resource'=> 'carriers'),
             'current_state' => array(
                 'xlink_resource'=> 'order_states',
                 'setter' => 'setWsCurrentState'
@@ -264,31 +267,33 @@ class OrderCore extends ObjectModel
             'module' => array('required' => true),
             'invoice_number' => array(),
             'invoice_date' => array(),
-            // 'delivery_number' => array(),
-            // 'delivery_date' => array(),
             'valid' => array(),
             'date_add' => array(),
             'date_upd' => array(),
-            // 'shipping_number' => array(
-            //     'getter' => 'getWsShippingNumber',
-            //     'setter' => 'setWsShippingNumber'
-            // ),
+        ),
+        'hidden_fields' => array (
+            'total_shipping',
+            'total_shipping_tax_incl',
+            'total_shipping_tax_excl',
+            'carrier_tax_rate',
+            'id_carrier',
+            'total_wrapping',
+            'total_wrapping_tax_incl',
+            'total_wrapping_tax_excl',
+            'delivery_date',
+            'delivery_number',
+            'shipping_number',
+            'id_shop',
+            'id_shop_group',
+            'recyclable',
+            'gift',
+            'gift_message',
+            'mobile_theme',
+            'round_mode',
+            'round_type',
+            'reference',
         ),
         'associations' => array(
-            // 'order_rows' => array('resource' => 'order_row', 'setter' => false, 'virtual_entity' => true,
-            //     'fields' => array(
-            //         'id' =>  array(),
-            //         'product_id' => array('required' => true),
-            //         'product_attribute_id' => array('required' => true),
-            //         'product_quantity' => array('required' => true),
-            //         'product_name' => array('setter' => false),
-            //         'product_reference' => array('setter' => false),
-            //         'product_ean13' => array('setter' => false),
-            //         'product_upc' => array('setter' => false),
-            //         'product_price' => array('setter' => false),
-            //         'unit_price_tax_incl' => array('setter' => false),
-            //         'unit_price_tax_excl' => array('setter' => false),
-            //     )),
             'bookings' => array(
                 'resource' => 'booking',
                 'setter' => false,
@@ -746,6 +751,7 @@ class OrderCore extends ObjectModel
 
     public function getTaxesAverageUsed()
     {
+        // @todo should use order table to get tax average
         return Cart::getTaxesAverageUsed((int)$this->id_cart);
     }
 
@@ -1266,8 +1272,6 @@ class OrderCore extends ObjectModel
                 $this->setLastInvoiceNumber($order_invoice->id, $this->id_shop);
             }
 
-
-
             // Update order_carrier
             $id_order_carrier = Db::getInstance()->getValue('
 				SELECT `id_order_carrier`
@@ -1291,11 +1295,13 @@ class OrderCore extends ObjectModel
             // Update order payment
             if ($use_existing_payment) {
                 $id_order_payments = Db::getInstance()->executeS('
-					SELECT DISTINCT op.id_order_payment
+					SELECT DISTINCT op.id_order_payment, opd.id_order_payment_detail
 					FROM `'._DB_PREFIX_.'order_payment` op
 					INNER JOIN `'._DB_PREFIX_.'orders` o ON (o.reference = op.order_reference)
+					LEFT JOIN `'._DB_PREFIX_.'order_payment_detail` opd ON (op.id_order_payment = opd.id_order_payment)
 					LEFT JOIN `'._DB_PREFIX_.'order_invoice_payment` oip ON (oip.id_order_payment = op.id_order_payment)
-					WHERE (oip.id_order != '.(int)$order_invoice->id_order.' OR oip.id_order IS NULL) AND o.id_order = '.(int)$order_invoice->id_order);
+					WHERE (oip.id_order != '.(int)$order_invoice->id_order.' OR oip.id_order IS NULL) AND o.id_order = '.(int)$order_invoice->id_order.'
+                    AND opd.`id_order` = '.$order_invoice->id_order);
 
                 if (count($id_order_payments)) {
                     foreach ($id_order_payments as $order_payment) {
@@ -1303,6 +1309,7 @@ class OrderCore extends ObjectModel
 							INSERT INTO `'._DB_PREFIX_.'order_invoice_payment`
 							SET
 								`id_order_invoice` = '.(int)$order_invoice->id.',
+								`id_order_payment_detail` = '.(int)$order_payment['id_order_payment_detail'].',
 								`id_order_payment` = '.(int)$order_payment['id_order_payment'].',
 								`id_order` = '.(int)$order_invoice->id_order);
                     }
@@ -1310,7 +1317,6 @@ class OrderCore extends ObjectModel
                     Cache::clean('order_invoice_paid_*');
                 }
             }
-
             // Update order cart rule
             Db::getInstance()->execute('
 				UPDATE `'._DB_PREFIX_.'order_cart_rule`
@@ -1348,7 +1354,7 @@ class OrderCore extends ObjectModel
             return;
         }
 
-        $address = new Address((int)$this->{Configuration::get('PS_TAX_ADDRESS_TYPE')});
+        $address = new Address((int)$this->id_address_tax);
         $carrier = new Carrier((int)$this->id_carrier);
         $tax_calculator = $carrier->getTaxCalculator($address);
         $order_invoice->total_discount_tax_excl = $this->total_discounts_tax_excl;
@@ -1600,6 +1606,7 @@ class OrderCore extends ObjectModel
     {
         /** @var PaymentModule $payment_module */
         $payment_module = Module::getInstanceByName($this->module);
+        $payment_module->orderSource = $this->source;
         $customer = new Customer($this->id_customer);
         $payment_module->validateOrder($this->id_cart, Configuration::get('PS_OS_WS_PAYMENT'), $this->total_paid, $this->payment, null, array(), null, false, $customer->secure_key);
         $this->id = $payment_module->currentOrder;
@@ -1684,11 +1691,12 @@ class OrderCore extends ObjectModel
     {
         // if one of the order details use the tax computation method the display will be different
         return Db::getInstance()->getValue('
-		SELECT od.`tax_computation_method`
-		FROM `'._DB_PREFIX_.'order_detail_tax` odt
-		LEFT JOIN `'._DB_PREFIX_.'order_detail` od ON (od.`id_order_detail` = odt.`id_order_detail`)
-		WHERE od.`id_order` = '.(int)$this->id.'
-		AND od.`tax_computation_method` = '.(int)TaxCalculator::ONE_AFTER_ANOTHER_METHOD);
+            SELECT od.`tax_computation_method`
+            FROM `'._DB_PREFIX_.'order_detail_tax` odt
+            LEFT JOIN `'._DB_PREFIX_.'order_detail` od ON (od.`id_order_detail` = odt.`id_order_detail`)
+            WHERE od.`id_order` = '.(int)$this->id.'
+            AND od.`tax_computation_method` = '.(int)TaxCalculator::ONE_AFTER_ANOTHER_METHOD
+        );
     }
 
     /**
@@ -1704,6 +1712,21 @@ class OrderCore extends ObjectModel
     }
 
     /**
+     * This method allows to get all Order Payment detail for the current order
+     * @since 1.5.0.1
+     * @return array of OrderPaymentDetails
+     */
+    public function getOrderPaymentDetail()
+    {
+        return Db::getInstance()->executeS('
+            SELECT opd.`amount` as `real_paid_amount`, opd.*, op.*
+            FROM `'._DB_PREFIX_.'order_payment_detail` opd
+            INNER JOIN `'._DB_PREFIX_.'order_payment` op ON (opd.`id_order_payment` = op.`id_order_payment`)
+            WHERE `id_order` = '.$this->id
+        );
+    }
+
+    /**
      *
      * This method allows to add a payment to the current order
      * @since 1.5.0.1
@@ -1713,9 +1736,10 @@ class OrderCore extends ObjectModel
      * @param Currency $currency
      * @param string $date
      * @param OrderInvoice $order_invoice
+     * @param bool $update_payment_detail :: if false, be sure to add payment detail in payment detail table
      * @return bool
      */
-    public function addOrderPayment($amount_paid, $payment_method = null, $payment_transaction_id = null, $currency = null, $date = null, $order_invoice = null)
+    public function addOrderPayment($amount_paid, $payment_method = null, $payment_transaction_id = null, $currency = null, $date = null, $order_invoice = null, $update_payment_detail = true)
     {
         $order_payment = new OrderPayment();
         $order_payment->order_reference = $this->reference;
@@ -1733,30 +1757,51 @@ class OrderCore extends ObjectModel
             $order_payment->date_add .= ' '.date('H:i:s');
         }
 
-        // Update total_paid_real value for backward compatibility reasons
-        if ($order_payment->id_currency == $this->id_currency) {
-            $this->total_paid_real += $order_payment->amount;
-        } else {
-            $this->total_paid_real += Tools::ps_round(Tools::convertPrice($order_payment->amount, $order_payment->id_currency, false), 2);
-        }
-
         // We put autodate parameter of add method to true if date_add field is null
-        $res = $order_payment->add(is_null($order_payment->date_add)) && $this->update();
-
-        if (!$res) {
-            return false;
-        }
-
-        if (!is_null($order_invoice)) {
-            $res = Db::getInstance()->execute('
-			INSERT INTO `'._DB_PREFIX_.'order_invoice_payment` (`id_order_invoice`, `id_order_payment`, `id_order`)
-			VALUES('.(int)$order_invoice->id.', '.(int)$order_payment->id.', '.(int)$this->id.')');
-
-            // Clear cache
-            Cache::clean('order_invoice_paid_*');
+        if ($res = $order_payment->add(is_null($order_payment->date_add))) {
+            if ($update_payment_detail) {
+                $res &= $this->addOrderPaymentDetail($order_payment, $amount_paid, $order_invoice);
+            }
         }
 
         return $res;
+    }
+
+    public function addOrderPaymentDetail(OrderPayment $payment, $amount = null, $order_invoice = null)
+    {
+        if (Validate::isLoadedObject($payment)) {
+            if (!is_null($amount)) {
+                $amount = $payment->amount;
+            }
+            $order_payment_detail = new OrderPaymentDetail();
+            $order_payment_detail->id_order = $this->id;
+            $order_payment_detail->id_order_payment = (int)$payment->id;
+            $order_payment_detail->amount = $amount;
+
+            if ($payment->id_currency == $this->id_currency) {
+                $this->total_paid_real += $order_payment_detail->amount;
+            } else {
+                $this->total_paid_real += Tools::ps_round(Tools::convertPrice($order_payment_detail->amount, $payment->id_currency, false), 2);
+            }
+
+            if (!validate::isPrice($this->total_paid_real)) {
+                return false;
+            }
+
+            if ($order_payment_detail->add() && $this->update()) {
+                if (!is_null($order_invoice)) {
+                    $res = Db::getInstance()->execute('
+                    INSERT INTO `'._DB_PREFIX_.'order_invoice_payment` (`id_order_invoice`, `id_order_payment`, `id_order_payment_detail`, `id_order`)
+                    VALUES('.(int)$order_invoice->id.', '.(int)(int)$payment->id.', '.(int)$order_payment_detail->id.', '.(int)$this->id.')');
+
+                    // Clear cache
+                    Cache::clean('order_invoice_paid_*');
+                }
+
+                return $order_payment_detail->id;
+            }
+        }
+        return false;
     }
 
     /**
@@ -1891,14 +1936,15 @@ class OrderCore extends ObjectModel
         }
 
         $total = 0;
+
         // Retrieve all payments
-        $payments = $this->getOrderPaymentCollection();
+        $payments = $this->getOrderPaymentDetail();
         foreach ($payments as $payment) {
             /** @var OrderPayment $payment */
-            if ($payment->id_currency == $currency->id) {
-                $total += $payment->amount;
+            if ($payment['id_currency'] == $currency->id) {
+                $total += $payment['real_paid_amount'];
             } else {
-                $amount = Tools::convertPrice($payment->amount, $payment->id_currency, false);
+                $amount = Tools::convertPrice($payment['real_paid_amount'], $payment['id_currency'], false);
                 if ($currency->id == Configuration::get('PS_CURRENCY_DEFAULT', null, null, $this->id_shop)) {
                     $total += $amount;
                 } else {
@@ -1911,18 +1957,22 @@ class OrderCore extends ObjectModel
     }
 
     /**
-     * Get the sum of total_paid_tax_incl of the orders with similar reference
-     *
-     * @since 1.5.0.1
+     * Get the sum of total_paid_tax_incl/advance_paid_amount of the orders with similar reference
+     * @param integer $getAdvancePaid (send 1 if want total advance paid amount)
      * @return float
      */
-    public function getOrdersTotalPaid()
+    public function getOrdersTotalPaid($getAdvancePaid = 0)
     {
-        return Db::getInstance()->getValue('
-			SELECT SUM(total_paid_tax_incl)
-			FROM `'._DB_PREFIX_.'orders`
-			WHERE `reference` = \''.pSQL($this->reference).'\'
-			AND `id_cart` = '.(int)$this->id_cart);
+        $sql = 'SELECT';
+        if ($getAdvancePaid) {
+            $sql .= ' SUM(advance_paid_amount)';
+        } else {
+            $sql .= ' SUM(total_paid_tax_incl)';
+        }
+        $sql .=  'FROM `'._DB_PREFIX_.'orders` WHERE `reference` = \''.pSQL($this->reference).
+        '\' AND `id_cart` = '.(int)$this->id_cart;
+
+        return Db::getInstance()->getValue($sql);
     }
 
     /**
@@ -2158,6 +2208,11 @@ class OrderCore extends ObjectModel
     public function getOrderPayments()
     {
         return OrderPayment::getByOrderReference($this->reference);
+    }
+
+    public function getOrderPaymentsDetail()
+    {
+        return OrderPaymentDetail::getByOrderId($this->id);
     }
 
     /**
@@ -2476,7 +2531,7 @@ class OrderCore extends ObjectModel
                     if ($refundFlag) {
                         foreach ($refundBookings as $refundRow) {
                             if (Validate::isLoadedObject(
-                                $objReturnState = new OrderReturnState($refundRow['current_state']
+                                $objReturnState = new OrderReturnState($refundRow['state']
                             ))) {
                                 if ($refundFlag == OrderReturnState::ORDER_RETURN_STATE_FLAG_REFUNDED
                                     && !$objReturnState->refunded

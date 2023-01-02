@@ -22,9 +22,9 @@
 *  @license    http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
-{capture name=path}{l s='Your addresses'}{/capture}
+{capture name=path}{l s='Your address'}{/capture}
 <div class="box">
-	<h1 class="page-subheading">{l s='Your addresses'}</h1>
+	<h1 class="page-subheading">{l s='Your address'}</h1>
 	<p class="info-title">
 		{if isset($id_address) && (isset($smarty.post.alias) || isset($address->alias))}
 			{l s='Modify address'}
@@ -34,7 +34,7 @@
 				{if isset($address->alias)}"{$address->alias|escape:'html':'UTF-8'}"{/if}
 			{/if}
 		{else}
-			{l s='To add a new address, please fill out the form below.'}
+			{l s='To add an address, please fill out the form below.'}
 		{/if}
 	</p>
 	{include file="$tpl_dir./errors.tpl"}
@@ -52,16 +52,6 @@
 				<div class="form-group">
 					<label for="company">{l s='Company'}{if isset($required_fields) && in_array($field_name, $required_fields)} <sup>*</sup>{/if}</label>
 					<input class="form-control validate" data-validate="{$address_validation.$field_name.validate}" type="text" id="company" name="company" value="{if isset($smarty.post.company)}{$smarty.post.company}{else}{if isset($address->company)}{$address->company|escape:'html':'UTF-8'}{/if}{/if}" />
-				</div>
-			{/if}
-			{if $field_name eq 'vat_number'}
-				<div id="vat_area">
-					<div id="vat_number">
-						<div class="form-group">
-							<label for="vat-number">{l s='VAT number'}{if isset($required_fields) && in_array($field_name, $required_fields)} <sup>*</sup>{/if}</label>
-							<input type="text" class="form-control validate" data-validate="{$address_validation.$field_name.validate}" id="vat-number" name="vat_number" value="{if isset($smarty.post.vat_number)}{$smarty.post.vat_number}{else}{if isset($address->vat_number)}{$address->vat_number|escape:'html':'UTF-8'}{/if}{/if}" />
-						</div>
-					</div>
 				</div>
 			{/if}
 			{if $field_name eq 'dni'}
@@ -209,8 +199,8 @@
 </div>
 <ul class="footer_links clearfix">
 	<li>
-		<a class="btn btn-defaul button button-small" href="{$link->getPageLink('addresses', true)|escape:'html':'UTF-8'}">
-			<span><i class="icon-chevron-left"></i> {l s='Back to your addresses'}</span>
+		<a class="btn btn-defaul button button-small" href="{$link->getPageLink('my-account', true)|escape:'html':'UTF-8'}">
+			<span><i class="icon-chevron-left"></i> {l s='Back to your account'}</span>
 		</a>
 	</li>
 </ul>
@@ -231,8 +221,5 @@
 {/if}
 {if isset($countries)}
 	{addJsDef countries=$countries}
-{/if}
-{if isset($vatnumber_ajax_call) && $vatnumber_ajax_call}
-	{addJsDef vatnumber_ajax_call=$vatnumber_ajax_call}
 {/if}
 {/strip}

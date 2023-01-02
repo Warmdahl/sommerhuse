@@ -104,65 +104,7 @@ class ToolsCore
             }
         }
 
-        if (function_exists('mcrypt_create_iv')) {
-            $bytes = mcrypt_create_iv($length, MCRYPT_DEV_URANDOM);
-
-            if ($bytes !== false && strlen($bytes) === $length) {
-                return $bytes;
-            }
-        }
-
-        // Else try to get $length bytes of entropy.
-        // Thanks to Zend
-
-        $result         = '';
-        $entropy        = '';
-        $msec_per_round = 400;
-        $bits_per_round = 2;
-        $total          = $length;
-        $hash_length    = 20;
-
-        while (strlen($result) < $length) {
-            $bytes  = ($total > $hash_length) ? $hash_length : $total;
-            $total -= $bytes;
-
-            for ($i=1; $i < 3; $i++) {
-                $t1 = microtime(true);
-                $seed = mt_rand();
-
-                for ($j=1; $j < 50; $j++) {
-                    $seed = sha1($seed);
-                }
-
-                $t2 = microtime(true);
-                $entropy .= $t1 . $t2;
-            }
-
-            $div = (int) (($t2 - $t1) * 1000000);
-
-            if ($div <= 0) {
-                $div = 400;
-            }
-
-            $rounds = (int) ($msec_per_round * 50 / $div);
-            $iter = $bytes * (int) (ceil(8 / $bits_per_round));
-
-            for ($i = 0; $i < $iter; $i ++) {
-                $t1 = microtime();
-                $seed = sha1(mt_rand());
-
-                for ($j = 0; $j < $rounds; $j++) {
-                    $seed = sha1($seed);
-                }
-
-                $t2 = microtime();
-                $entropy .= $t1 . $t2;
-            }
-
-            $result .= sha1($entropy, true);
-        }
-
-        return substr($result, 0, $length);
+        return false;
     }
 
     public static function strReplaceFirst($search, $replace, $subject, $cur = 0)
@@ -926,6 +868,11 @@ class ToolsCore
         return html_entity_decode((string)$string, ENT_QUOTES, 'utf-8');
     }
 
+    public static function removeHtmlComments($html)
+    {
+        return preg_replace('/<!--(.|\s)*?-->/', '', $html);
+    }
+
     public static function safePostVars()
     {
         if (!isset($_POST) || !is_array($_POST)) {
@@ -1066,7 +1013,7 @@ class ToolsCore
 
         echo '
 			<script type="text/javascript">
-				console.'.$type.'('.Tools::jsonEncode($object).');
+				console.'.$type.'('.json_encode($object).');
 			</script>
 		';
     }
@@ -1822,10 +1769,10 @@ class ToolsCore
         return Tools::strtoupper(Tools::substr($str, 0, 1)).Tools::substr($str, 1);
     }
 
-    public static function ucwords($str)
+    public static function ucwords($str, $encoding = 'utf-8')
     {
         if (function_exists('mb_convert_case')) {
-            return mb_convert_case($str, MB_CASE_TITLE);
+            return mb_convert_case($str, MB_CASE_TITLE, $encoding);
         }
         return ucwords(Tools::strtolower($str));
     }
@@ -2222,8 +2169,8 @@ class ToolsCore
     public static function parserSQL($sql)
     {
         if (strlen($sql) > 0) {
-            require_once(_PS_TOOL_DIR_.'parser_sql/PHPSQLParser.php');
-            $parser = new PHPSQLParser($sql);
+            require_once _PS_TOOL_DIR_.'parser_sql/php_sql_parser_autoload.php';
+            $parser = new PHPSQLParser\PHPSQLParser($sql);
             return $parser->parsed;
         }
         return false;
@@ -2660,19 +2607,15 @@ exit;
     /**
      * jsonDecode convert json string to php array / object
      *
-     * @param string $json
+     * @param string $data
      * @param bool $assoc  (since 1.4.2.4) if true, convert to associativ array
      * @return array
      */
-    public static function jsonDecode($json, $assoc = false)
+    public static function jsonDecode($data, $assoc = false, $depth = 512, $options = 0
+    )
     {
-        if (function_exists('json_decode')) {
-            return json_decode($json, $assoc);
-        } else {
-            include_once(_PS_TOOL_DIR_.'json/json.php');
-            $pear_json = new Services_JSON(($assoc) ? SERVICES_JSON_LOOSE_TYPE : 0);
-            return $pear_json->decode($json);
-        }
+        Tools::displayAsDeprecated();
+        return json_decode($data, $assoc, $depth, $options);
     }
 
     /**
@@ -2681,15 +2624,15 @@ exit;
      * @param array $data
      * @return string json
      */
-    public static function jsonEncode($data)
+    public static function jsonEncode($data, $options = 0, $depth = 512)
     {
-        if (function_exists('json_encode')) {
-            return json_encode($data);
-        } else {
-            include_once(_PS_TOOL_DIR_.'json/json.php');
-            $pear_json = new Services_JSON();
-            return $pear_json->encode($data);
+        Tools::displayAsDeprecated();
+        if (PHP_VERSION_ID < 50500) { /* PHP version < 5.5.0 */
+            return json_encode($data, $options);
         }
+
+        return json_encode($data, $options, $depth);
+
     }
 
     /**
@@ -2700,10 +2643,12 @@ exit;
         $backtrace = debug_backtrace();
         $callee = next($backtrace);
         $class = isset($callee['class']) ? $callee['class'] : null;
+        $callee['file'] = isset($callee['file']) ? $callee['file'] : '<undefined>';
+        $callee['line'] = isset($callee['line']) ? $callee['line'] : '<undefined>';
         if ($message === null) {
             $message = 'The function '.$callee['function'].' (Line '.$callee['line'].') is deprecated and will be removed in the next major version.';
         }
-        $error = 'Function <b>'.$callee['function'].'()</b> is deprecated in <b>'.$callee['file'].'</b> on line <b>'.$callee['line'].'</b><br />';
+        $error = 'Function: <b>'.$callee['function'].'()</b> is deprecated in file: <b>'.$callee['file'].'</b> on line: <b>'.$callee['line'].'</b><br />';
 
         Tools::throwDeprecated($error, $message, $class);
     }
@@ -2854,14 +2799,9 @@ exit;
      */
     public static function ZipTest($from_file)
     {
-        if (class_exists('ZipArchive', false)) {
-            $zip = new ZipArchive();
-            return ($zip->open($from_file, ZIPARCHIVE::CHECKCONS) === true);
-        } else {
-            require_once(_PS_ROOT_DIR_.'/tools/pclzip/pclzip.lib.php');
-            $zip = new PclZip($from_file);
-            return ($zip->privCheckFormat() === true);
-        }
+        $zip = new ZipArchive();
+
+        return ($zip->open($from_file, ZipArchive::CHECKCONS) === true);
     }
 
     public static function getSafeModeStatus()
@@ -2881,23 +2821,12 @@ exit;
         if (!file_exists($to_dir)) {
             mkdir($to_dir, 0777);
         }
-        if (class_exists('ZipArchive', false)) {
-            $zip = new ZipArchive();
-            if ($zip->open($from_file) === true && $zip->extractTo($to_dir) && $zip->close()) {
-                return true;
-            }
-            return false;
-        } else {
-            require_once(_PS_ROOT_DIR_.'/tools/pclzip/pclzip.lib.php');
-            $zip = new PclZip($from_file);
-            $list = $zip->extract(PCLZIP_OPT_PATH, $to_dir, PCLZIP_OPT_REPLACE_NEWER);
-            foreach ($list as $file) {
-                if ($file['status'] != 'ok' && $file['status'] != 'already_a_directory') {
-                    return false;
-                }
-            }
+        $zip = new ZipArchive();
+        if ($zip->open($from_file) === true && $zip->extractTo($to_dir) && $zip->close()) {
             return true;
         }
+
+        return false;
     }
 
     public static function chmodr($path, $filemode)
@@ -3391,15 +3320,17 @@ exit;
         }
 
         $post_data = http_build_query(array(
-            'version' => isset($params['version']) ? $params['version'] : _PS_VERSION_,
+            'version' => isset($params['version']) ? $params['version'] : _QLOAPPS_VERSION_,
             'iso_lang' => Tools::strtolower(isset($params['iso_lang']) ? $params['iso_lang'] : Context::getContext()->language->iso_code),
             'iso_code' => Tools::strtolower(isset($params['iso_country']) ? $params['iso_country'] : Country::getIsoById(Configuration::get('PS_COUNTRY_DEFAULT'))),
             'shop_url' => isset($params['shop_url']) ? $params['shop_url'] : Tools::getShopDomain(),
+            'shop_url_ssl' => isset($params['shop_url_ssl']) ? $params['shop_url_ssl'] : Tools::getShopDomainSsl(),
+            'physical_uri' => Context::getContext()->shop->physical_uri,
             'mail' => isset($params['email']) ? $params['email'] : Configuration::get('PS_SHOP_EMAIL')
         ));
 
         $protocols = array('https');
-        $end_point = 'api.addons.prestashop.com';
+        $end_point = _QLO_API_DOMAIN_;
 
         switch ($request) {
             case 'native':
@@ -3418,6 +3349,10 @@ exit;
                 $protocols[] = 'http';
                 $post_data .= '&method=listing&action=must-have-themes';
                 break;
+            case 'addons-modules':
+                $protocols[] = 'http';
+                $post_data .= '&method=listing&action=addons-modules';
+                break;
             case 'customer':
                 $post_data .= '&method=listing&action=customer&username='.urlencode(trim(Context::getContext()->cookie->username_addons))
                     .'&password='.urlencode(trim(Context::getContext()->cookie->password_addons));
@@ -3430,10 +3365,10 @@ exit;
                 $post_data .= '&method=check_customer&username='.urlencode($params['username_addons']).'&password='.urlencode($params['password_addons']);
                 break;
             case 'check_module':
-                $post_data .= '&method=check&module_name='.urlencode($params['module_name']).'&module_key='.urlencode($params['module_key']);
-                break;
+               $post_data .= '&method=check&module='.urlencode($params['module_name']);
+               break;
             case 'module':
-                $post_data .= '&method=module&id_module='.urlencode($params['id_module']);
+                $post_data .= '&method=module&module='.urlencode($params['module_name']);
                 if (isset($params['username_addons']) && isset($params['password_addons'])) {
                     $post_data .= '&username='.urlencode($params['username_addons']).'&password='.urlencode($params['password_addons']);
                 } else {
@@ -3445,12 +3380,23 @@ exit;
                     .'&password='.urlencode($params['password_addons'])
                     .'&shop_url='.urlencode(isset($params['shop_url']) ? $params['shop_url'] : Tools::getShopDomain())
                     .'&mail='.urlencode(isset($params['email']) ? $params['email'] : Configuration::get('PS_SHOP_EMAIL'));
-                $protocols[] = 'https';
                 break;
             case 'install-modules':
-                $protocols[] = 'http';
                 $post_data .= '&method=listing&action=install-modules';
                 $post_data .= defined('_PS_HOST_MODE_') ? '-od' : '';
+                break;
+            case 'catalog-recommendation':
+                $protocols[] = 'http';
+                $post_data .= '&method=content&action=catalogRecommendation';
+                $post_data .= defined('_PS_HOST_MODE_') ? '-od' : '';
+                break;
+            case 'dashboard-recommendation':
+                $protocols[] = 'http';
+                $post_data .= '&method=content&action=dashboardRecommendation';
+                $post_data .= defined('_PS_HOST_MODE_') ? '-od' : '';
+                break;
+            case 'check-version':
+                $post_data .= '&method=check-version&autoupgrade='.(int)(Module::isInstalled('qloautoupgrade') && Module::isEnabled('qloautoupgrade'));
                 break;
             default:
                 return false;
@@ -3461,7 +3407,7 @@ exit;
                 'method'  => 'POST',
                 'content' => $post_data,
                 'header'  => 'Content-type: application/x-www-form-urlencoded',
-                'timeout' => 5,
+                'timeout' => 10,
             )
         ));
 
@@ -3626,8 +3572,6 @@ exit;
 
     public static function purifyHTML($html, $uri_unescape = null, $allow_style = false)
     {
-        require_once(_PS_TOOL_DIR_.'htmlpurifier/HTMLPurifier.standalone.php');
-
         static $use_html_purifier = null;
         static $purifier = null;
 

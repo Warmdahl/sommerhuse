@@ -208,7 +208,7 @@ class OrderDetailControllerCore extends FrontController
                     $hasError = 1;
                 }
                 if ($bookingRefunds = Tools::getValue('bookings_to_refund')) {
-                    if (!count($bookingRefunds = Tools::jsonDecode($bookingRefunds, true))) {
+                    if (!count($bookingRefunds = json_decode($bookingRefunds, true))) {
                         $hasError = 1;
                     } else {
                         foreach ($bookingRefunds as $idHtlBooking) {
@@ -248,9 +248,9 @@ class OrderDetailControllerCore extends FrontController
                     // Emails to customer, admin on refund request state change
                     $objOrderReturn->changeIdOrderReturnState(OrderReturnState::ORDER_RETRUN_FIRST_STATUS, $objOrderReturn->id);
 
-                    die(Tools::jsonEncode(array('status' => 1)));
+                    die(json_encode(array('status' => 1)));
                 }
-                die(Tools::jsonEncode(array('status' => 0)));
+                die(json_encode(array('status' => 0)));
             }
             // END ajax request handle
 
@@ -274,6 +274,12 @@ class OrderDetailControllerCore extends FrontController
                 $order_status = new OrderState((int)$id_order_state, (int)$order->id_lang);
 
                 $customer = new Customer($order->id_customer);
+
+                $customerGuestDetail = false;
+                if ($id_customer_guest_detail = OrderCustomerGuestDetail::isCustomerGuestBooking($order->id)) {
+                    $customerGuestDetail = new OrderCustomerGuestDetail($id_customer_guest_detail);
+                }
+
 
                 //by webkul to show order details properly on order history page
 
@@ -332,12 +338,13 @@ class OrderDetailControllerCore extends FrontController
                                     $cartHotelData[$type_key]['date_diff'][$date_join]['num_rm'] += 1;
 
                                     $num_days = $cartHotelData[$type_key]['date_diff'][$date_join]['num_days'];
-                                    $var_quant = (int) $cartHotelData[$type_key]['date_diff'][$date_join]['num_rm'];
 
                                     $cartHotelData[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_excl'] = $data_v['total_price_tax_excl']/$num_days;
                                     $cartHotelData[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_incl'] = $data_v['total_price_tax_incl']/$num_days;
-                                    $cartHotelData[$type_key]['date_diff'][$date_join]['amount_tax_incl'] = $data_v['total_price_tax_incl']*$var_quant;
-                                    $cartHotelData[$type_key]['date_diff'][$date_join]['amount_tax_excl'] = $data_v['total_price_tax_excl']*$var_quant;
+                                    $cartHotelData[$type_key]['date_diff'][$date_join]['avg_paid_unit_price_tax_excl'] += $cartHotelData[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_excl'];
+                                    $cartHotelData[$type_key]['date_diff'][$date_join]['avg_paid_unit_price_tax_incl'] += $cartHotelData[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_incl'];
+                                    $cartHotelData[$type_key]['date_diff'][$date_join]['amount_tax_incl'] += $data_v['total_price_tax_incl'];
+                                    $cartHotelData[$type_key]['date_diff'][$date_join]['amount_tax_excl'] += $data_v['total_price_tax_excl'];
                                     $cartHotelData[$type_key]['date_diff'][$date_join]['is_backorder'] = $data_v['is_back_order'];
                                     if ($data_v['is_back_order']) {
                                         $anyBackOrder = 1;
@@ -351,6 +358,8 @@ class OrderDetailControllerCore extends FrontController
 
                                     $cartHotelData[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_excl'] = $data_v['total_price_tax_excl']/$num_days;
                                     $cartHotelData[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_incl'] = $data_v['total_price_tax_incl']/$num_days;
+                                    $cartHotelData[$type_key]['date_diff'][$date_join]['avg_paid_unit_price_tax_excl'] = $cartHotelData[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_excl'];
+                                    $cartHotelData[$type_key]['date_diff'][$date_join]['avg_paid_unit_price_tax_incl'] = $cartHotelData[$type_key]['date_diff'][$date_join]['paid_unit_price_tax_incl'];
                                     $cartHotelData[$type_key]['date_diff'][$date_join]['amount_tax_incl'] = $data_v['total_price_tax_incl'];
                                     $cartHotelData[$type_key]['date_diff'][$date_join]['amount_tax_excl'] = $data_v['total_price_tax_excl'];
                                     $cartHotelData[$type_key]['date_diff'][$date_join]['is_backorder'] = $data_v['is_back_order'];
@@ -406,6 +415,15 @@ class OrderDetailControllerCore extends FrontController
 
                                 $cartHotelData[$type_key]['hotel_name'] = $data_v['hotel_name'];
                             }
+
+                            // calculate averages now
+                            foreach ($cartHotelData[$type_key]['date_diff'] as $key => &$value) {
+                                $value['avg_paid_unit_price_tax_excl'] = Tools::ps_round($value['avg_paid_unit_price_tax_excl'] / $value['num_rm'], 6);
+                                $value['avg_paid_unit_price_tax_incl'] = Tools::ps_round($value['avg_paid_unit_price_tax_incl'] / $value['num_rm'], 6);
+
+                                $value['avg_price_diff_tax_excl'] = abs(Tools::ps_round($value['avg_paid_unit_price_tax_excl'] - $value['product_price_tax_excl'], 6));
+                                $value['avg_price_diff_tax_incl'] = abs(Tools::ps_round($value['avg_paid_unit_price_tax_incl'] - $value['product_price_tax_incl'], 6));
+                            }
                         }
 
                         $redirectTermsLink = $this->context->link->getCMSLink(new CMS(3, $this->context->language->id), null, $this->context->language->id);
@@ -445,6 +463,7 @@ class OrderDetailControllerCore extends FrontController
                         'shop_name' => strval(Configuration::get('PS_SHOP_NAME')),
                         'order' => $order,
                         'guestInformations' => (array)new Customer($order->id_customer),
+                        'customerGuestDetail' => $customerGuestDetail,
                         'currency' => new Currency($order->id_currency),
                         'order_state' => (int) $id_order_state,
                         'invoiceAllowed' => (int) Configuration::get('PS_INVOICE'),

@@ -29,8 +29,8 @@ class blocknavigationmenu extends Module
     {
         $this->name = 'blocknavigationmenu';
         $this->tab = 'front_office_features';
-        $this->version = '1.1.0';
-        $this->author = 'webkul';
+        $this->version = '1.1.1';
+        $this->author = 'Webkul';
         $this->need_instance = 0;
 
         $this->bootstrap = true;
@@ -39,6 +39,11 @@ class blocknavigationmenu extends Module
         $this->displayName = $this->l('Navigation block');
         $this->description = $this->l('Adds a navigation block at top and footer section.');
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
+    }
+
+    public function getContent()
+    {
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminCustomNavigationLinkSetting'));
     }
 
     public function hookTop($params)
@@ -53,8 +58,8 @@ class blocknavigationmenu extends Module
                 'currentPage' => Tools::getValue('controller')
             )
         );
-        $this->context->controller->addJS(_PS_MODULE_DIR_.$this->name.'/views/js/htlnevigationmenu.js');
-        $this->context->controller->addCSS(_PS_MODULE_DIR_.$this->name.'/views/css/blocknavigation.css');
+        $this->context->controller->addJS($this->_path.'/views/js/htlnevigationmenu.js');
+        $this->context->controller->addCSS($this->_path.'/views/css/blocknavigation.css');
 
         $objCustomNavigationLink = new WkCustomNavigationLink();
         if ($navigationLinks = $objCustomNavigationLink->getCustomNavigationLinks(1, false, 1)) {
@@ -78,7 +83,7 @@ class blocknavigationmenu extends Module
                         $link['link'] = $this->context->link->getPageLink($link['link']);
                     }
                 }
-                $this->context->controller->addCSS(_PS_MODULE_DIR_.$this->name.'/views/css/wkFooterNavigationBlock.css');
+                $this->context->controller->addCSS($this->_path.'/views/css/wkFooterNavigationBlock.css');
                 $this->context->smarty->assign('navigation_links', $navigationLinks);
                 return $this->display(__FILE__, 'wkFooterNavigationBlock.tpl');
             }
@@ -96,15 +101,6 @@ class blocknavigationmenu extends Module
             //If Admin update new language when we do entry in module all lang tables.
             HotelHelper::updateLangTables($newIdLang, $langTables);
         }
-    }
-
-    public function hookDisplayAddModuleSettingLink()
-    {
-        $this->context->smarty->assign(
-            'custom_navigation_link_setting_url',
-            $this->context->link->getAdminLink('AdminCustomNavigationLinkSetting')
-        );
-        return $this->display(__FILE__, 'customNavigationLinkSetting.tpl');
     }
 
     public function install()
@@ -128,7 +124,6 @@ class blocknavigationmenu extends Module
         return $this->registerHook(
             array (
                 'footer',
-                'displayAddModuleSettingLink',
                 'actionObjectLanguageAddAfter',
                 'displayDefaultNavigationHook',
                 'displayNavigationHook',

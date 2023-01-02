@@ -31,8 +31,8 @@ class WkRoomSearchBlock extends Module
     {
         $this->name = 'wkroomsearchblock';
         $this->tab = 'front_office_features';
-        $this->version = '1.1.1';
-        $this->author = 'webkul';
+        $this->version = '1.1.2';
+        $this->author = 'Webkul';
         $this->need_instance = 0;
 
         $this->bootstrap = true;
@@ -51,9 +51,9 @@ class WkRoomSearchBlock extends Module
             || 'index' == $controller
             || 'product' == $controller
         ) {
-            $this->context->controller->addCSS(_PS_MODULE_DIR_.'hotelreservationsystem/views/css/datepickerCustom.css');
-            $this->context->controller->addCSS(_PS_MODULE_DIR_.$this->name.'/views/css/wk-global-search.css');
-            $this->context->controller->addJS(_PS_MODULE_DIR_.$this->name.'/views/js/wk-room-search-block.js');
+            $this->context->controller->addCSS($this->_path.'/views/css/wk-global-search.css');
+            $this->context->controller->addJS($this->_path.'/views/js/wk-room-search-block.js');
+            $this->context->controller->addCSS(_THEME_CSS_DIR_.'datepicker.css');
 
             Media::addJsDef(
                 array (
@@ -74,14 +74,14 @@ class WkRoomSearchBlock extends Module
 
         // apply assets as per pages
         if ('category' == $controller) {
-            $this->context->controller->addCSS(_PS_MODULE_DIR_.$this->name.'/views/css/wk-category-search.css');
+            $this->context->controller->addCSS($this->_path.'views/css/wk-category-search.css');
         }
         if ('index' == $controller) {
-            $this->context->controller->addCSS(_PS_MODULE_DIR_.$this->name.'/views/css/wk-landing-page-search.css');
+            $this->context->controller->addCSS($this->_path.'views/css/wk-landing-page-search.css');
         }
         if ('product' == $controller) {
-            $this->context->controller->addCSS(_PS_MODULE_DIR_.$this->name.'/views/css/wk-roomtype-search.css');
-            $this->context->controller->addJS(_PS_MODULE_DIR_.$this->name.'/views/js/wk-roomtype-search.js');
+            $this->context->controller->addCSS($this->_path.'views/css/wk-roomtype-search.css');
+            $this->context->controller->addJS($this->_path.'views/js/wk-roomtype-search.js');
         }
     }
 

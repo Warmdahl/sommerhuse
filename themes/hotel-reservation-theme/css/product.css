@@ -27,8 +27,8 @@
 
 .primary_block .pb-left-column img {
   max-width: 100%;
+  height: auto; }
 
-  height: 100%; }
 a.fancybox-nav {
   outline: 0; }
 
@@ -486,11 +486,11 @@ span.view_scroll_spacer {
     display: block;
     background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4gPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJncmFkIiBncmFkaWVudFVuaXRzPSJvYmplY3RCb3VuZGluZ0JveCIgeDE9IjAuNSIgeTE9IjAuMCIgeDI9IjAuNSIgeTI9IjEuMCI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzAwOWFkMCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzAwN2FiNyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JhZCkiIC8+PC9zdmc+IA==');
     background-size: 100%;
-    background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #C6745D), color-stop(100%, #B84D29));
-    background-image: -moz-linear-gradient(#C6745D, #B84D29);
-    background-image: -webkit-linear-gradient(#C6745D, #B84D29);
-    background-image: linear-gradient(#C6745D, #B84D29);
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#C6745D', endColorstr='#B84D29',GradientType=0 ); }
+    background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #009ad0), color-stop(100%, #007ab7));
+    background-image: -moz-linear-gradient(#009ad0, #007ab7);
+    background-image: -webkit-linear-gradient(#009ad0, #007ab7);
+    background-image: linear-gradient(#009ad0, #007ab7);
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#009ad0', endColorstr='#007ab7',GradientType=0 ); }
     .box-info-product .exclusive:before {
       font-family: "FontAwesome";
       position: absolute;
@@ -563,11 +563,11 @@ span.view_scroll_spacer {
     .box-info-product .exclusive:hover {
       background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4gPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJncmFkIiBncmFkaWVudFVuaXRzPSJvYmplY3RCb3VuZGluZ0JveCIgeDE9IjAuNSIgeTE9IjAuMCIgeDI9IjAuNSIgeTI9IjEuMCI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzAwN2FiNyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzAwOWFkMCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JhZCkiIC8+PC9zdmc+IA==');
       background-size: 100%;
-      background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #B84D29), color-stop(100%, #C6745D));
-      background-image: -moz-linear-gradient(#B84D29, #C6745D);
-      background-image: -webkit-linear-gradient(#B84D29, #C6745D);
-      background-image: linear-gradient(#B84D29, #C6745D);
-      filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#B84D29', endColorstr='#C6745D',GradientType=0 );
+      background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #007ab7), color-stop(100%, #009ad0));
+      background-image: -moz-linear-gradient(#007ab7, #009ad0);
+      background-image: -webkit-linear-gradient(#007ab7, #009ad0);
+      background-image: linear-gradient(#007ab7, #009ad0);
+      filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#007ab7', endColorstr='#009ad0',GradientType=0 );
       background-position: 0 0; }
 
 #center_column.col-sm-9 .col-md-3 .box-info-product {
@@ -588,11 +588,11 @@ span.view_scroll_spacer {
     display: block;
     background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4gPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJncmFkIiBncmFkaWVudFVuaXRzPSJvYmplY3RCb3VuZGluZ0JveCIgeDE9IjAuNSIgeTE9IjAuMCIgeDI9IjAuNSIgeTI9IjEuMCI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzAwOWFkMCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzAwN2FiNyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JhZCkiIC8+PC9zdmc+IA==');
     background-size: 100%;
-    background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #C6745D), color-stop(100%, #B84D29));
-    background-image: -moz-linear-gradient(#C6745D, #B84D29);
-    background-image: -webkit-linear-gradient(#C6745D, #B84D29);
-    background-image: linear-gradient(#C6745D, #B84D29);
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#C6745D', endColorstr='#B84D29',GradientType=0 ); }
+    background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #009ad0), color-stop(100%, #007ab7));
+    background-image: -moz-linear-gradient(#009ad0, #007ab7);
+    background-image: -webkit-linear-gradient(#009ad0, #007ab7);
+    background-image: linear-gradient(#009ad0, #007ab7);
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#009ad0', endColorstr='#007ab7',GradientType=0 ); }
     #center_column.col-sm-9 .col-md-3 .box-info-product .exclusive:before {
       font-family: "FontAwesome";
       position: relative;
@@ -661,11 +661,11 @@ span.view_scroll_spacer {
     #center_column.col-sm-9 .col-md-3 .box-info-product .exclusive:hover {
       background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4gPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJncmFkIiBncmFkaWVudFVuaXRzPSJvYmplY3RCb3VuZGluZ0JveCIgeDE9IjAuNSIgeTE9IjAuMCIgeDI9IjAuNSIgeTI9IjEuMCI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzAwN2FiNyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzAwOWFkMCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JhZCkiIC8+PC9zdmc+IA==');
       background-size: 100%;
-      background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #B84D29), color-stop(100%, #C6745D));
-      background-image: -moz-linear-gradient(#B84D29, #C6745D);
-      background-image: -webkit-linear-gradient(#B84D29, #C6745D);
-      background-image: linear-gradient(#B84D29, #C6745D);
-      filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#B84D29', endColorstr='#C6745D',GradientType=0 );
+      background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #007ab7), color-stop(100%, #009ad0));
+      background-image: -moz-linear-gradient(#007ab7, #009ad0);
+      background-image: -webkit-linear-gradient(#007ab7, #009ad0);
+      background-image: linear-gradient(#007ab7, #009ad0);
+      filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#007ab7', endColorstr='#009ad0',GradientType=0 );
       background-position: 0 0; }
 
 /* table_data_sheet */
@@ -1159,8 +1159,14 @@ Quick View Styles
   font-family: inherit;
   color: #404040;
   font-size: 18px;
-  font-weight: 700;
-  border-bottom: 4px solid #379aef;}
+  font-weight: 700;}
+  .product_description_tabs li.active:after {
+    content: '';
+    position: absolute;
+    top: 36px;
+    width: 100%;
+    height: 4px;
+    background: #379aef;}
 .product_description_tabs_contents
 {
   margin-top: 0px!important;
@@ -1182,6 +1188,12 @@ Quick View Styles
   color: #000000;}
   .room_info_content .refund-rule-name {
     font-weight: 600;}
+  .room_info_content .rm_ftr_wrapper {
+    white-space: nowrap;
+    overflow: hidden;
+    line-height: 28px;}
+      .room_info_content .rm_ftr_wrapper img {
+        width: 13px;}
 
 .non_refundable_txt {
   font-weight: 600;
@@ -1195,10 +1207,9 @@ Quick View Styles
     margin-bottom: 10px;}
 
 .hotel_name_block {
-  font-family: OpenSans;
   font-size: 22px;
   color: #000000;
-  margin-bottom: 5px;}
+  margin-bottom: 8px;}
 .room_hotel_name_block
 {
   padding-bottom: 12px;}
@@ -1218,51 +1229,17 @@ Quick View Styles
     font-size: 16px;
     font-weight: 400;
     padding-top: 10px;}
-.room_unavailability_qty_error_div
-{
-  display: none;
-  background-color: #cd5d5d;
-    color: #ffffff;
-    font-size: 13px;
-    margin-bottom: 10px;
-    padding: 2px;
-    text-align: center;}
 
-.room_unavailability_date_error_div
-{
-  display: none;
-  background-color: #cd5d5d;
-    color: #ffffff;
-    font-size: 13px;
-    margin-bottom: 10px;
-    padding: 2px;
-    text-align: center;}
-
-.room_ratting_yes
-{
-  background-position: 48px 22px;
-  display: inline-block;
-    height: 22px;
-    width: 22px;}
-.room_ratting_no
-{
-  background-position: 74px 22px;
-  display: inline-block;
-    height: 22px;
-    width: 22px;}
-.num_reviews {
-  font-size: 14px;
-  color: #0000FF;
-  margin-left: 10px;}
 .sold_out_alert, .order_restrict_alert {
   color: #FF4B4B;
   display: block;
   font-size: 16px;
   font-weight: 700;}
-.num_quantity_alert {
-  font-size: 14px;
-  color: #FF4B4B;
-  font-weight: 700;}
+  .num_quantity_alert {
+    font-size: 14px;
+    color: #FF4B4B;
+    font-weight: 700;
+    text-align: right;}
 
 /*for search block background*/
 .idTabHrefShort:hover {
@@ -1459,3 +1436,90 @@ Quick View Styles
 	display:none;
 	border-top: 1px solid #eee;
 	padding-top: 15px;} */
+
+#room_type_map_tab .map-wrap {
+  min-height: 500px;
+}
+
+#room_type_map_tab .hotel-info-wrap {
+  max-width: 300px;
+  background-color: #fff;
+  padding: 12px;
+  margin: 0 0 20px 10px;
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  display: flex;
+}
+
+#room_type_map_tab .hotel-info-wrap .hotel-image-wrap {
+  padding-right: 8px;
+}
+
+#room_type_map_tab .hotel-info-wrap .hotel-image-wrap img {
+  max-width: 70px;
+  max-height: 70px;
+}
+
+#room_type_map_tab .hotel-info-wrap .name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #1a73e8;
+  margin-bottom: 6px;
+}
+
+#room_type_map_tab .hotel-info-wrap .address,
+#room_type_map_tab .hotel-info-wrap .contact {
+  font-size: 13px;
+  font-weight: normal;
+  color: #555;
+}
+
+#room_type_map_tab .hotel-info-wrap .address {
+  margin-bottom: 6px;
+}
+
+#room_type_map_tab .hotel-info-wrap .view-on-map {
+  background-color: #186bd7;
+  border-radius: 2px;
+  color: #fff;
+  padding: 5px 10px;
+}
+
+.room_info_hotel_images_wrap .row {
+  margin-left: -7.5px;
+  margin-right: -7.5px; }
+
+.room_info_hotel_images_wrap .col-sm-4 {
+  padding-left: 7.5px;
+  padding-right: 7.5px; }
+
+#room_info_hotel_images .image-item {
+  margin-bottom: 15px; }
+
+#room_info_hotel_images .image-item img {
+  width: 100%;
+  height: 200px;
+  border-radius: 4px;
+  object-fit: cover;
+  transition: all 0.2s; }
+
+#room_info_hotel_images .image-item img:hover {
+  transform: scale(1.05); }
+
+.room_info_hotel_images_wrap .btn-show-more-images {
+  background: #379BF0;
+  padding: 10px 25px;
+  border: none;
+  border-radius: 2px;
+  color: #fff;
+  font-weight: bold; }
+
+.room_info_hotel_images_wrap .btn-show-more-images:hover {
+  opacity: 0.8; }
+
+/* loading animation */
+#room_info_hotel_images .skeleton-loading-wrap .col-sm-4 {
+  border: 7.5px solid #fff; }
+
+#room_info_hotel_images .skeleton-loading-wrap .loading-container-box {
+  height: 200px; }

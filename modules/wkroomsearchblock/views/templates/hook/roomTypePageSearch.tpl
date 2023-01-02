@@ -26,11 +26,12 @@
 					<div class="col-sm-9 form-group">
 						<div class="filter_header row">
 							<div class="col-sm-12">
+								<p>{l s='Searched results for' mod='wkroomsearchblock'}:</p>
 							</div>
 						</div>
 						<div class="row">
 							<div class="col-sm-12 search_result_info">
-								{$search_data['htl_dtl']['hotel_name']|escape:'htmlall':'UTF-8'}, {$search_data['htl_dtl']['city']|escape:'htmlall':'UTF-8'} {if !$search_data['order_date_restrict']}<img src="{$module_dir}views/img/icon-arrow-left.svg"> {$search_data['date_from']|escape:'htmlall':'UTF-8'|date_format:"%d %b %Y"} - {$search_data['date_to']|escape:'htmlall':'UTF-8'|date_format:"%d %b %Y"}<span class="faded-txt"> ({1+$search_data['num_days']|escape:'htmlall':'UTF-8'} {l s='Dage' mod='wkroomsearchblock'} {$search_data['num_days']|escape:'htmlall':'UTF-8'} {if $search_data['num_days'] > 1}{l s='Nætter' mod='wkroomsearchblock'}{else}{l s='Nat' mod='wkroomsearchblock'}{/if})</span> {/if}
+								{$search_data['htl_dtl']['hotel_name']|escape:'htmlall':'UTF-8'}, {$search_data['htl_dtl']['city']|escape:'htmlall':'UTF-8'} {if !$search_data['order_date_restrict']}<img src="{$module_dir}views/img/icon-arrow-left.svg"> {$search_data['date_from']|escape:'htmlall':'UTF-8'|date_format:"%d %b %Y"} - {$search_data['date_to']|escape:'htmlall':'UTF-8'|date_format:"%d %b %Y"}<span class="faded-txt"> ({1+$search_data['num_days']|escape:'htmlall':'UTF-8'} {l s='Days' mod='wkroomsearchblock'} {$search_data['num_days']|escape:'htmlall':'UTF-8'} {if $search_data['num_days'] > 1}{l s='Nights' mod='wkroomsearchblock'}{else}{l s='Night' mod='wkroomsearchblock'}{/if})</span> {/if}
 							</div>
 						</div>
 					</div>
@@ -64,6 +65,7 @@
 					<div class="form-group wk-padding-5 {if isset($location_enabled) && $location_enabled}col-md-5{/if} col-sm-6 {if count($hotels_info) <= 1 && !$show_hotel_name} hidden {/if}">
 						{if !$show_hotel_name}
 							<input type="hidden" id="max_order_date" name="max_order_date" value="{if isset($hotels_info[0]['max_order_date'])}{$hotels_info[0]['max_order_date']|escape:'htmlall':'UTF-8'}{/if}">
+							<input type="hidden" id="preparation_time" name="preparation_time" value="{if isset($hotels_info[0]['preparation_time'])}{$hotels_info[0]['preparation_time']|escape:'htmlall':'UTF-8'}{/if}">
 							<input type="hidden" id="hotel_cat_id" name="hotel_cat_id" value="{$hotels_info[0]['id_category']}">
 							<input type="hidden" id="id_hotel" name="id_hotel" value="{$hotels_info[0]['id']|escape:'htmlall':'UTF-8'}">
 							<input type="text" id="htl_name" class="form-control header-rmsearch-input" value="{$hotels_info[0]['hotel_name']}" readonly>
@@ -71,6 +73,7 @@
 							{if isset($hotels_info) && count($hotels_info)}
 								<div class="dropdown">
 									<input type="hidden" id="hotel_cat_id" name="hotel_cat_id" {if isset($search_data)}value="{$search_data['htl_dtl']['id_category']|escape:'htmlall':'UTF-8'}"{/if}>
+									<input type="hidden" id="preparation_time" name="preparation_time" value="{if isset($preparation_time)}{$preparation_time|escape:'htmlall':'UTF-8'}{/if}">
 									<input type="hidden" id="id_hotel" name="id_hotel" {if isset($search_data)}value="{$search_data['htl_dtl']['id']|escape:'htmlall':'UTF-8'}"{/if}>
 									<input type="hidden" id="max_order_date" name="max_order_date" value="{if isset($max_order_date)}{$max_order_date|escape:'htmlall':'UTF-8'}{/if}">
 
@@ -84,7 +87,7 @@
 									<ul class="dropdown-menu hotel_dropdown_ul">
 										{if isset($hotels_info) && $hotels_info}
 											{foreach $hotels_info as $name_val}
-												<li tabindex="-1" class="search_result_li" data-id-hotel="{$name_val['id']|escape:'htmlall':'UTF-8'}" data-hotel-cat-id="{$name_val['id_category']|escape:'htmlall':'UTF-8'}" data-max_order_date="{$name_val['max_order_date']}">{$name_val['hotel_name']|escape:'htmlall':'UTF-8'}</li>
+												<li tabindex="-1" class="search_result_li" data-id-hotel="{$name_val['id']|escape:'htmlall':'UTF-8'}" data-hotel-cat-id="{$name_val['id_category']|escape:'htmlall':'UTF-8'}" data-max_order_date="{$name_val['max_order_date']}" data-preparation_time="{$name_val['preparation_time']|escape:'htmlall':'UTF-8'}">{$name_val['hotel_name']|escape:'htmlall':'UTF-8'}</li>
 											{/foreach}
 										{/if}
 									</ul>

@@ -40,36 +40,6 @@ class HotelHelper
         Media::addJsDef($jsVars);
     }
 
-    public function initCurl($params)
-    {
-        if (!$params) {
-            return false;
-        }
-        if ($params['contentType'] == 'JSON') {
-            $header = array('Content-Type: application/json');
-            if (isset($params['postData'])) {
-                $header[] = 'Content-Length: '.strlen($params['postData']);
-            }
-        }
-
-        $curlInit = curl_init();
-        curl_setopt($curlInit, CURLOPT_URL, $params['url']);
-        curl_setopt($curlInit, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
-        curl_setopt($curlInit, CURLOPT_HTTPHEADER,  $header);
-        curl_setopt($curlInit, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($curlInit, CURLOPT_CUSTOMREQUEST, $params['method']);
-        curl_setopt($curlInit, CURLOPT_RETURNTRANSFER, 1);
-        if (isset($params['postData'])) {
-            curl_setopt($curlInit, CURLOPT_POSTFIELDS, $params['postData']);
-        }
-        $response = curl_exec($curlInit);
-
-        // Close handle
-        curl_close($curlInit);
-
-        return $response;
-    }
-
     public function insertHotelCommonFeatures()
     {
         $parent_features_arr = array(
@@ -252,6 +222,8 @@ class HotelHelper
             date('d-m-Y', strtotime(date('Y-m-d', time()).' + 1 year'))
         );
 
+        Configuration::updateValue('GLOBAL_PREPARATION_TIME', 0);
+
         Configuration::updateValue('HTL_FEATURE_PRICING_PRIORITY', 'specific_date;special_day;date_range');
         Configuration::updateValue('WK_GOOGLE_ACTIVE_MAP', 0);
         Configuration::updateValue('WK_MAP_HOTEL_ACTIVE_ONLY', 1);
@@ -277,18 +249,6 @@ class HotelHelper
         Configuration::updateValue('WK_HTL_CHAIN_NAME', $WK_HTL_CHAIN_NAME);
         Configuration::updateValue('WK_HTL_TAG_LINE', $WK_HTL_TAG_LINE);
         Configuration::updateValue('WK_HTL_SHORT_DESC', $WK_HTL_SHORT_DESC);
-
-        return true;
-    }
-
-    public function insertHotelRoomAllotmentType()
-    {
-        $altment_type_arr = array('Random Allotment','Manual Allotment');
-        foreach ($altment_type_arr as $key => $value) {
-            $obj_allotmanet_type = new HotelRoomAllotmentType();
-            $obj_allotmanet_type->type = $value;
-            $obj_allotmanet_type->save();
-        }
 
         return true;
     }
@@ -585,25 +545,19 @@ class HotelHelper
     public function saveDummyHotelImages($idHotel)
     {
         if ($idHotel) {
-            $hotelImgPath = _PS_MODULE_DIR_.'hotelreservationsystem/views/img/hotel_img/';
-            if (is_dir($hotelImgPath)) {
-                if ($dir = opendir($hotelImgPath)) {
-                    while (($file = readdir($dir)) !== false) {
-                        $explodeFile = explode('.', $file);
-                        if ($explodeFile[1] == 'jpg') {
-                            $coverImgExist = HotelImage::getCover($idHotel);
-                            $objHtlImage = new HotelImage();
-                            $objHtlImage->id_hotel = $idHotel;
-                            $objHtlImage->hotel_image_id = $explodeFile[0];
-                            if (!$coverImgExist) {
-                                $objHtlImage->cover = 1;
-                            } else {
-                                $objHtlImage->cover = 0;
-                            }
-                            $objHtlImage->add();
-                        }
+            $objHotelImage = new HotelImage();
+            if (is_dir(_PS_HOTEL_IMG_DIR_)) {
+                foreach(scandir(_PS_HOTEL_IMG_DIR_) as $file) {
+                    if ($file === '.' || $file === '..') {
+                        continue;
                     }
-                    closedir($dir);
+                    if (preg_match('/[^\\s]+\.jpg$/', $file)) {
+                        $imageDetail = $objHotelImage->uploadHotelImages(
+                            array('tmp_name' => _PS_HOTEL_IMG_DIR_.$file),
+                            $idHotel
+                        );
+                        unlink(_PS_HOTEL_IMG_DIR_.$file);
+                    }
                 }
             }
         }
@@ -673,16 +627,6 @@ class HotelHelper
         }
     }
 
-    public function validImageExt($image_name)
-    {
-        if (!empty($image_name)) {
-            if (ImageManager::isCorrectImageFileExt($image_name)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public static function generateRandomCode($length = 8)
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyz';
@@ -703,33 +647,6 @@ class HotelHelper
 
         $startUrl = $forceSsl ? $baseDirSsl : $baseDir;
         return $startUrl;
-    }
-
-    public static function getQloNativeModules()
-    {
-        $qloModXml = _PS_ROOT_DIR_.'/config/xml/qlo_mod_list.xml';
-        if (!file_exists($qloModXml)) {
-            return false;
-        }
-        $qloNativeMods = @simplexml_load_file($qloModXml);
-
-        if ($qloNativeMods) {
-            $qloNativeMods = $qloNativeMods->modules;
-        }
-        $modules = array();
-        if (is_object($qloNativeMods)) {
-            foreach ($qloNativeMods as $qloNativeModsType) {
-                if (in_array($qloNativeModsType['type'], array('native'))) {
-                    foreach ($qloNativeModsType->module as $module) {
-                        $modules[] = $module['name'];
-                    }
-                }
-            }
-        }
-        if ($modules) {
-            return $modules;
-        }
-        return false;
     }
 
     // update lang values of Configuration lang type keys when importing new language from localization
@@ -799,23 +716,5 @@ class HotelHelper
             }
         }
         return $randZipCode;
-    }
-
-    /**
-     * Get Super Admin Of Prestashop
-     * @return int Super Admin Employee ID
-     */
-    public static function getSupperAdmin()
-    {
-        if ($data = Db::getInstance()->executeS('SELECT * FROM `'._DB_PREFIX_.'employee` ORDER BY `id_employee`')) {
-            foreach ($data as $emp) {
-                $employee = new Employee($emp['id_employee']);
-                if ($employee->isSuperAdmin()) {
-                    return $emp['id_employee'];
-                }
-            }
-        }
-
-        return false;
     }
 }

@@ -26,7 +26,7 @@
 
 /* Debug only */
 if (!defined('_PS_MODE_DEV_')) {
-define('_PS_MODE_DEV_', false);
+    define('_PS_MODE_DEV_', false);
 }
 /* Compatibility warning */
 define('_PS_DISPLAY_COMPATIBILITY_WARNING_', false);
@@ -107,7 +107,6 @@ if (!defined('_PS_GEOIP_DIR_')) {
 if (!defined('_PS_GEOIP_CITY_FILE_')) {
     define('_PS_GEOIP_CITY_FILE_',       'GeoLiteCity.dat');
 }
-define('_PS_PEAR_XML_PARSER_PATH_',  _PS_TOOL_DIR_.'pear_xml_parser/');
 define('_PS_SWIFT_DIR_',             _PS_TOOL_DIR_.'swift/');
 define('_PS_TAASC_PATH_',            _PS_TOOL_DIR_.'taasc/');
 define('_PS_TCPDF_PATH_',            _PS_TOOL_DIR_.'tcpdf/');
@@ -129,6 +128,7 @@ define('_PS_LANG_IMG_DIR_',          _PS_IMG_DIR_.'l/');
 define('_PS_MANU_IMG_DIR_',          _PS_IMG_DIR_.'m/');
 define('_PS_ORDER_STATE_IMG_DIR_',   _PS_IMG_DIR_.'os/');
 define('_PS_PROD_IMG_DIR_',          _PS_IMG_DIR_.'p/');
+define('_PS_HOTEL_IMG_DIR_',          _PS_MODULE_DIR_.'hotelreservationsystem/views/img/hotel_img/');
 define('_PS_SCENE_IMG_DIR_',         _PS_IMG_DIR_.'scenes/');
 define('_PS_SCENE_THUMB_IMG_DIR_',   _PS_IMG_DIR_.'scenes/thumbs/');
 define('_PS_SHIP_IMG_DIR_',          _PS_IMG_DIR_.'s/');
@@ -140,7 +140,7 @@ define('_PS_TMP_IMG_DIR_',           _PS_IMG_DIR_.'tmp/');
 define('_PS_TRANS_PATTERN_',            '(.*[^\\\\])');
 define('_PS_MIN_TIME_GENERATE_PASSWD_', '360');
 if (!defined('_PS_MAGIC_QUOTES_GPC_')) {
-    define('_PS_MAGIC_QUOTES_GPC_',         get_magic_quotes_gpc());
+    define('_PS_MAGIC_QUOTES_GPC_', function_exists('get_magic_quotes_gpc')? @get_magic_quotes_gpc() : false);
 }
 
 define('_CAN_LOAD_FILES_', 1);

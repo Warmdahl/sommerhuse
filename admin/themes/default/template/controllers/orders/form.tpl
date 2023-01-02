@@ -237,11 +237,19 @@
 			$(this).change();
 			return true;
 		});
-		$('.product_unit_price').live('change', function(e) {
+		$(document).on('change', '.room_unit_price', function(e) {
 			e.preventDefault();
-			var product = $(this).attr('rel').split('_');
-			updateProductPrice(product[0], product[1], $(this).val());
-		});
+			var cart_row = $(this).closest('tr');
+			var params = {
+				id_booking_data: parseInt($(this).attr('data-id-booking-data')),
+				id_product: parseInt($(this).attr('data-id-product')),
+				id_room: parseInt($(this).attr('data-id-room')),
+				date_from: $(this).attr('data-date-from'),
+				date_to: $(this).attr('data-date-to'),
+				price: $(this).val(),
+			};
+			updateProductPrice(params, cart_row);
+		})
 		$('#order_message').live('change', function(e) {
 			e.preventDefault();
 			$.ajax({
@@ -381,29 +389,43 @@
 		});
 	}
 
-	function updateProductPrice(id_product, id_product_attribute, new_price)
-	{
+	function updateProductPrice(params, cart_row) {
+		$.extend(params, {
+			id_cart: id_cart,
+			price: new Number(params.price.replace(",",".")).toFixed(4).toString(),
+		});
+
 		$.ajax({
 			type:"POST",
 			url: "{$link->getAdminLink('AdminCarts')|addslashes}",
 			async: true,
-			dataType: "json",
-			data : {
+			dataType: "JSON",
+			data: {
 				ajax: "1",
 				token: "{getAdminToken tab='AdminCarts'}",
 				tab: "AdminCarts",
 				action: "updateProductPrice",
-				id_cart: id_cart,
-				id_product: id_product,
-				id_product_attribute: id_product_attribute,
-				id_customer: id_customer,
-				price: new Number(new_price.replace(",",".")).toFixed(4).toString()
-				},
-			success : function(res)
-			{
-				displaySummary(res);
+				params: params,
+			},
+			success : function(response) {
+				updateCartLine(response.curr_booking_info, cart_row);
+				updateCartSummaryData(response.cart_info);
 			}
 		});
+	}
+
+	function updateCartLine(data, cart_row) {
+		$(cart_row).find('.cart_line_total_rooms_price').html(data.amt_with_qty);
+		$(cart_row).find('.cart_line_total_price').html(data.total_price);
+	}
+
+	function updateCartSummaryData(summaryData) {
+		$('#total_products').html(formatCurrency(parseFloat(summaryData.summary.total_products), currency_format, currency_sign, currency_blank));
+		$('#total_extra_demands').html(formatCurrency(parseFloat(summaryData.summary.total_extra_demands_tax_exc), currency_format, currency_sign, currency_blank));
+		$('#total_vouchers').html(formatCurrency(parseFloat(summaryData.summary.total_discounts_tax_exc), currency_format, currency_sign, currency_blank));
+		$('#total_without_taxes').html(formatCurrency(parseFloat(summaryData.summary.total_price_without_tax), currency_format, currency_sign, currency_blank));
+		$('#total_taxes').html(formatCurrency(parseFloat(summaryData.summary.total_tax), currency_format, currency_sign, currency_blank));
+		$('#total_with_taxes').html(formatCurrency(parseFloat(summaryData.summary.total_price), currency_format, currency_sign, currency_blank));
 	}
 
 	function displayQtyInStock(id)
@@ -558,7 +580,6 @@
 			}
 		});
 	}
-
 
 	function setupCustomer(idCustomer)
 	{
@@ -863,8 +884,7 @@
 		return price;
 	}
 
-	function displaySummary(jsonSummary)
-	{
+	function displaySummary(jsonSummary) {
 		currency_format = jsonSummary.currency.format;
 		currency_sign = jsonSummary.currency.sign;
 		currency_blank = jsonSummary.currency.blank;
@@ -874,37 +894,37 @@
 		updateCartVouchers(jsonSummary.summary.discounts);
 		updateAddressesList(jsonSummary.addresses, jsonSummary.cart.id_address_delivery, jsonSummary.cart.id_address_invoice);
 
-		if (!jsonSummary.summary.products.length || !jsonSummary.addresses.length || !jsonSummary.delivery_option_list)
+		if (!jsonSummary.summary.products.length || !jsonSummary.addresses.length || !jsonSummary.delivery_option_list) {
 			$('#carriers_part').hide();
-		else
+		} else {
 			$('#carriers_part').hide();
-
-		//original
-		/*if (!jsonSummary.summary.products.length || !jsonSummary.addresses.length || !jsonSummary.delivery_option_list)
-			$('#carriers_part,#summary_part').hide();
-		else
-			$('#carriers_part,#summary_part').hide();
-		*/
+		}
 
 		updateDeliveryOptionList(jsonSummary.delivery_option_list);
 		checkVirtualProduct(jsonSummary.summary.products,jsonSummary.delivery_option_list);
 
-		if (jsonSummary.cart.gift == 1)
+		if (jsonSummary.cart.gift == 1) {
 			$('#order_gift').attr('checked', true);
-		else
+		} else {
 			$('#carrier_gift').removeAttr('checked');
-		if (jsonSummary.cart.recyclable == 1)
+		}
+		if (jsonSummary.cart.recyclable == 1) {
 			$('#carrier_recycled_package').attr('checked', true);
-		else
+		} else {
 			$('#carrier_recycled_package').removeAttr('checked');
-		if (jsonSummary.free_shipping == 1)
+		}
+		if (jsonSummary.free_shipping == 1) {
 			$('#free_shipping').attr('checked', true);
-		else
+		} else {
 			$('#free_shipping_off').attr('checked', true);
+		}
 
 		$('#gift_message').html(jsonSummary.cart.gift_message);
-		if (!changed_shipping_price)
+
+		if (!changed_shipping_price) {
 			$('#shipping_price').html('<b>' + formatCurrency(parseFloat(jsonSummary.summary.total_shipping), currency_format, currency_sign, currency_blank) + '</b>');
+		}
+
 		shipping_price_selected_carrier = jsonSummary.summary.total_shipping;
 
 		$('#total_vouchers').html(formatCurrency(parseFloat(jsonSummary.summary.total_discounts_tax_exc), currency_format, currency_sign, currency_blank));
@@ -1125,6 +1145,7 @@
 		{
 			$('#addresses_err').show().html('{l s='You must add at least one address to process the order.'}');
 			$('#address_delivery, #address_invoice').hide();
+			$("#new_address").show();
 
 			//by webkul (if there is no address then order can not be created)
 			$("button[name=\"submitAddOrder\"]").attr("disabled", "disabled");
@@ -1132,6 +1153,7 @@
 		else
 		{
 			$('#addresses_err').hide();
+			$("#new_address").hide();
 			$('#address_delivery, #address_invoice').show();
 
 			//by webkul
@@ -1139,8 +1161,8 @@
 		}
 
 		/*Changed by webkul to make delivery and invoice addresses same*/
-		$('#id_address_delivery').html(addresses_delivery_options);
-		$('#id_address_invoice').html(addresses_delivery_options);
+		$('#id_address_delivery').html(addresses_delivery_options).hide();
+		$('#id_address_invoice').html(addresses_delivery_options).hide();
 		$('#address_delivery_detail').html(address_delivery_detail);
 		$('#address_invoice_detail').html(address_delivery_detail);
 		$('#edit_delivery_address').attr('href', delivery_address_edit_link);
@@ -1179,6 +1201,124 @@
 			}
 		});
 	}
+
+	{* JS for handling extra demands changes *}
+	$(document).ready(function() {
+		// modalbox for extra demands
+		$('body').on('click', '.open_rooms_extra_demands', function() {
+			var idProduct = $(this).attr('id_product');
+			var idCart = $(this).attr('id_cart');
+			var idRoom = $(this).attr('id_room');
+			var dateFrom = $(this).attr('date_from');
+			var dateTo = $(this).attr('date_to');
+			$.ajax({
+				type: 'POST',
+				dataType: 'JSON',
+				headers: {
+					"cache-control": "no-cache"
+				},
+				url: "{$link->getAdminLink('AdminCarts')|addslashes}",
+				cache: false,
+				data: {
+					date_from: dateFrom,
+					date_to: dateTo,
+					id_room: idRoom,
+					id_cart: idCart,
+					id_product: idProduct,
+					action: 'getRoomTypeCartDemands',
+					ajax: true
+				},
+				success: function(response) {
+					if (response.status) {
+						$('#rooms_type_extra_demands').find('#room_type_demands_desc').html('');
+						$('#rooms_type_extra_demands').find('#room_type_demands_desc').append(response.html_exta_demands);
+						$('#rooms_type_extra_demands').modal('show');
+					}
+				},
+			});
+		});
+		$(document).on('hidden.bs.modal', '#rooms_type_extra_demands', function (e) {
+			// reload to make changes reflect everywhere
+			location.reload();
+		});
+
+		// select/unselect extra demand
+		$(document).on('click', '.id_room_type_demand', function() {
+			var roomDemands = [];
+			// get the selected extra demands by customer
+			$(this).closest('.room_demand_detail').find('input:checkbox.id_room_type_demand:checked').each(function () {
+				roomDemands.push({
+					'id_global_demand':$(this).val(),
+					'id_option': $(this).closest('.room_demand_block').find('.id_option').val()
+				});
+			});
+			var idBookingCart = $(this).attr('id_cart_booking');
+			$.ajax({
+				type: 'POST',
+				dataType: 'JSON',
+				headers: {
+					"cache-control": "no-cache"
+				},
+				url: "{$link->getAdminLink('AdminCarts')|addslashes}",
+				dataType: 'JSON',
+				cache: false,
+				data: {
+					id_cart_booking: idBookingCart,
+					room_demands: JSON.stringify(roomDemands),
+					action: 'changeRoomDemands',
+					ajax: true
+				},
+				success: function(response) {
+					if (response.status) {
+						showSuccessMessage(txtExtraDemandSucc);
+					} else {
+						showErrorMessage(txtExtraDemandErr);
+					}
+				}
+			});
+		});
+
+		// change advanced option of extra demand
+		$(document).on('change', '.demand_adv_option_block .id_option', function(e) {
+			var option_selected = $(this).find('option:selected');
+			var extra_demand_price = option_selected.attr("optionPrice")
+			extra_demand_price = parseFloat(extra_demand_price);
+			extra_demand_price = formatCurrency(extra_demand_price, currency_format, currency_sign, currency_blank);
+			$(this).closest('.room_demand_block').find('.extra_demand_option_price').text(extra_demand_price);
+			var roomDemands = [];
+			// get the selected extra demands by customer
+			$(this).closest('.room_demand_detail').find('input:checkbox.id_room_type_demand:checked').each(function () {
+				roomDemands.push({
+					'id_global_demand':$(this).val(),
+					'id_option': $(this).closest('.room_demand_block').find('.id_option').val()
+				});
+			});
+			var idBookingCart = $(this).closest('.room_demand_block').find('.id_room_type_demand').attr('id_cart_booking');
+			$.ajax({
+				type: 'POST',
+				dataType: 'JSON',
+				headers: {
+					"cache-control": "no-cache"
+				},
+				url: "{$link->getAdminLink('AdminCarts')|addslashes}",
+				dataType: 'JSON',
+				cache: false,
+				data: {
+					id_cart_booking: idBookingCart,
+					room_demands: JSON.stringify(roomDemands),
+					action: 'changeRoomDemands',
+					ajax: true
+				},
+				success: function(response) {
+					if (response.status) {
+						showSuccessMessage(txtExtraDemandSucc);
+					} else {
+						showErrorMessage(txtExtraDemandErr);
+					}
+				}
+			});
+		});
+	});
 </script>
 
 <div class="leadin">{block name="leadin"}{/block}</div>

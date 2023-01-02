@@ -75,7 +75,7 @@ class OrderOpcControllerCore extends ParentOrderController
                                         $this->getFormatedSummaryDetail()
                                     );
                                     Cart::addExtraCarriers($return);
-                                    $this->ajaxDie(Tools::jsonEncode($return));
+                                    $this->ajaxDie(json_encode($return));
                                 } else {
                                     $this->errors[] = Tools::displayError('An error occurred while updating the cart.');
                                 }
@@ -89,7 +89,7 @@ class OrderOpcControllerCore extends ParentOrderController
                         case 'updateTOSStatusAndGetPayments':
                             if (Tools::isSubmit('checked')) {
                                 $this->context->cookie->checkedTOS = (int)Tools::getValue('checked');
-                                $this->ajaxDie(Tools::jsonEncode(array(
+                                $this->ajaxDie(json_encode(array(
                                     'HOOK_TOP_PAYMENT' => Hook::exec('displayPaymentTop'),
                                     'HOOK_PAYMENT' => $this->_getPaymentMethods()
                                 )));
@@ -97,7 +97,7 @@ class OrderOpcControllerCore extends ParentOrderController
                             break;
 
                         case 'getCarrierList':
-                            $this->ajaxDie(Tools::jsonEncode($this->_getCarrierList()));
+                            $this->ajaxDie(json_encode($this->_getCarrierList()));
                             break;
 
                         case 'editCustomer':
@@ -132,14 +132,42 @@ class OrderOpcControllerCore extends ParentOrderController
                             } else {
                                 $return['isSaved'] = false;
                             }
-                            $this->ajaxDie(Tools::jsonEncode($return));
+                            $this->ajaxDie(json_encode($return));
+                            break;
+
+                        case 'transformGuestAccount':
+                            $passwd = Tools::getValue('passwd');
+
+                            if (!$passwd) {
+                                $this->errors[] = Tools::displayError('Please enter a password.');
+                            }
+
+                            if ($passwd && !Validate::isPasswd($passwd)) {
+                                $this->errors[] = Tools::displayError('Please enter a valid password.');
+                            }
+
+                            if (!count($this->errors)) {
+                                $customer = new Customer($this->context->customer->id);
+                                if ($customer->transformToCustomer($this->context->language->id, $passwd)) {
+                                    $this->updateContext($customer);
+                                } else {
+                                    $this->errors[] = Tools::displayError('An error occurred while transforming your account into a registered customer.');
+                                }
+                            }
+
+                            $return = array(
+                                'hasError' => !empty($this->errors),
+                                'errors' => $this->errors,
+                            );
+
+                            $this->ajaxDie(json_encode($return));
                             break;
 
                         case 'getAddressBlockAndCarriersAndPayments':
                             if ($this->context->customer->isLogged() || $this->context->customer->isGuest()) {
                                 // check if customer have addresses
                                 if (!Customer::getAddressesTotalById($this->context->customer->id)) {
-                                    $this->ajaxDie(Tools::jsonEncode(array('no_address' => 1)));
+                                    $this->ajaxDie(json_encode(array('no_address' => 1)));
                                 }
                                 if (file_exists(_PS_MODULE_DIR_.'blockuserinfo/blockuserinfo.php')) {
                                     include_once(_PS_MODULE_DIR_.'blockuserinfo/blockuserinfo.php');
@@ -183,7 +211,7 @@ class OrderOpcControllerCore extends ParentOrderController
                                     ),
                                     $this->getFormatedSummaryDetail()
                                 );
-                                $this->ajaxDie(Tools::jsonEncode($return));
+                                $this->ajaxDie(json_encode($return));
                             }
                             die(Tools::displayError());
                             break;
@@ -265,11 +293,11 @@ class OrderOpcControllerCore extends ParentOrderController
                                             'refresh' => (bool)$this->ajax_refresh),
                                             $this->getFormatedSummaryDetail()
                                         );
-                                        $this->ajaxDie(Tools::jsonEncode($result));
+                                        $this->ajaxDie(json_encode($result));
                                     }
                                 }
                                 if (count($this->errors)) {
-                                    $this->ajaxDie(Tools::jsonEncode(array(
+                                    $this->ajaxDie(json_encode(array(
                                         'hasError' => true,
                                         'errors' => $this->errors
                                     )));
@@ -317,6 +345,10 @@ class OrderOpcControllerCore extends ParentOrderController
                             $this->ajaxDie($this->changeRoomDemands());
                             exit;
                             break;
+                        case 'submitCustomerGuestDetail':
+                            $this->ajaxDie($this->submitCustomerGuestDetail());
+                            exit;
+                            break;
                         default:
                             throw new PrestaShopException('Unknown method "'.Tools::getValue('method').'"');
                     }
@@ -345,7 +377,6 @@ class OrderOpcControllerCore extends ParentOrderController
         }
 
         $this->addJS(array(
-            _THEME_JS_DIR_.'tools/vatManagement.js',
             _THEME_JS_DIR_.'tools/statesManagement.js',
             _THEME_JS_DIR_.'order-carrier.js',
             _PS_JS_DIR_.'validate.js'
@@ -478,6 +509,15 @@ class OrderOpcControllerCore extends ParentOrderController
         $this->_assignCarrier();
         // PAYMENT
         $this->_assignPayment();
+        // GUEST BOOKING
+        if ($this->isLogged) {
+            if ($id_customer_guest_detail = CartCustomerGuestDetail::getCartCustomerGuest($this->context->cart->id)) {
+                $this->context->smarty->assign(
+                    'customer_guest_detail', CartCustomerGuestDetail::getCustomerGuestDetail($id_customer_guest_detail)
+                );
+            }
+            $this->context->smarty->assign('id_customer_guest_detail', $id_customer_guest_detail);
+        }
         Tools::safePostVars();
 
         $newsletter = Configuration::get('PS_CUSTOMER_NWSL') || (Module::isInstalled('blocknewsletter') && Module::getInstanceByName('blocknewsletter')->active);
@@ -597,7 +637,6 @@ class OrderOpcControllerCore extends ParentOrderController
             'company' => Tools::htmlentitiesUTF8($address_delivery->company),
             'lastname' => Tools::htmlentitiesUTF8($address_delivery->lastname),
             'firstname' => Tools::htmlentitiesUTF8($address_delivery->firstname),
-            'vat_number' => Tools::htmlentitiesUTF8($address_delivery->vat_number),
             'dni' => Tools::htmlentitiesUTF8($address_delivery->dni),
             'address1' => Tools::htmlentitiesUTF8($address_delivery->address1),
             'postcode' => Tools::htmlentitiesUTF8($address_delivery->postcode),
@@ -613,7 +652,6 @@ class OrderOpcControllerCore extends ParentOrderController
             'company_invoice' => Tools::htmlentitiesUTF8($address_invoice->company),
             'lastname_invoice' => Tools::htmlentitiesUTF8($address_invoice->lastname),
             'firstname_invoice' => Tools::htmlentitiesUTF8($address_invoice->firstname),
-            'vat_number_invoice' => Tools::htmlentitiesUTF8($address_invoice->vat_number),
             'dni_invoice' => Tools::htmlentitiesUTF8($address_invoice->dni),
             'address1_invoice' => Tools::htmlentitiesUTF8($address_invoice->address1),
             'address2_invoice' => Tools::htmlentitiesUTF8($address_invoice->address2),
@@ -627,7 +665,6 @@ class OrderOpcControllerCore extends ParentOrderController
             'invoice_company' => Tools::htmlentitiesUTF8($address_invoice->company),
             'invoice_lastname' => Tools::htmlentitiesUTF8($address_invoice->lastname),
             'invoice_firstname' => Tools::htmlentitiesUTF8($address_invoice->firstname),
-            'invoice_vat_number' => Tools::htmlentitiesUTF8($address_invoice->vat_number),
             'invoice_dni' => Tools::htmlentitiesUTF8($address_invoice->dni),
             'invoice_address' => $this->context->cart->id_address_invoice !== $this->context->cart->id_address_delivery,
             'invoice_address1' => Tools::htmlentitiesUTF8($address_invoice->address1),
@@ -958,8 +995,8 @@ class OrderOpcControllerCore extends ParentOrderController
         if ($idCartBooking = Tools::getValue('id_cart_booking')) {
             if (Validate::isLoadedObject($objCartbookingCata = new HotelCartBookingData($idCartBooking))) {
                 $roomDemands = Tools::getValue('room_demands');
-                $roomDemands = Tools::jsonDecode($roomDemands, true);
-                $roomDemands = Tools::jsonEncode($roomDemands);
+                $roomDemands = json_decode($roomDemands, true);
+                $roomDemands = json_encode($roomDemands);
                 $objCartbookingCata->extra_demands = $roomDemands;
                 if ($objCartbookingCata->save()) {
                     die('1');
@@ -967,5 +1004,65 @@ class OrderOpcControllerCore extends ParentOrderController
             }
         }
         die('0');
+    }
+
+    public function submitCustomerGuestDetail()
+    {
+        $customerGuestDetail = Tools::getValue('customer_guest_detail');
+        $this->context->cookie->__set('customer_details_proceeded', 0);
+        $this->context->cookie->checkedTOS = false;
+        if ($customerGuestDetail) {
+            if ($id_customer_guest_detail = CartCustomerGuestDetail::getCartCustomerGuest($this->context->cart->id)) {
+                $objCustomerGuestDetail = new CartCustomerGuestDetail($id_customer_guest_detail);
+            } else {
+                $objCustomerGuestDetail = new CartCustomerGuestDetail();
+            }
+
+            $customerGuestDetailGender = Tools::getValue('customer_guest_detail_gender');
+            $customerGuestDetailFirstname = Tools::getValue('customer_guest_detail_firstname');
+            $customerGuestDetailLastname = Tools::getValue('customer_guest_detail_lastname');
+            $customerGuestDetailEmail = Tools::getValue('customer_guest_detail_email');
+            $customerGuestDetailPhone = Tools::getValue('customer_guest_detail_phone');
+            if (trim($customerGuestDetailGender) && Validate::isUnsignedInt($customerGuestDetailGender)) {
+                $objCustomerGuestDetail->id_gender = $customerGuestDetailGender;
+            }
+            if (trim($customerGuestDetailFirstname) && Validate::isName($customerGuestDetailFirstname)) {
+                $objCustomerGuestDetail->firstname = $customerGuestDetailFirstname;
+            }
+            if (trim($customerGuestDetailLastname) && Validate::isName($customerGuestDetailLastname)) {
+                $objCustomerGuestDetail->lastname = $customerGuestDetailLastname;
+            }
+            if (trim($customerGuestDetailEmail) && Validate::isEmail($customerGuestDetailEmail)) {
+                $objCustomerGuestDetail->email = $customerGuestDetailEmail;
+            }
+            if (trim($customerGuestDetailPhone) && Validate::isPhoneNumber($customerGuestDetailPhone)) {
+                $objCustomerGuestDetail->phone = $customerGuestDetailPhone;
+            }
+            $objCustomerGuestDetail->id_cart = $this->context->cart->id;
+            $objCustomerGuestDetail->save();
+        } else {
+            if ($id_customer_guest_detail = CartCustomerGuestDetail::getCartCustomerGuest($this->context->cart->id)) {
+                if (Validate::isLoadedObject($objCustomerGuestDetail = new CartCustomerGuestDetail($id_customer_guest_detail))) {
+                    $objCustomerGuestDetail->delete();
+                }
+            }
+        }
+        $this->context->cart->save();
+    }
+
+    public function updateContext(Customer $customer)
+    {
+        $this->context->cookie->id_customer = (int)$customer->id;
+        $this->context->cookie->customer_lastname = $customer->lastname;
+        $this->context->cookie->customer_firstname = $customer->firstname;
+        $this->context->cookie->passwd = $customer->passwd;
+        $this->context->cookie->logged = 1;
+        $this->context->cookie->email = $customer->email;
+        $this->context->cookie->is_guest = 0;
+
+        $this->context->cart->secure_key = $customer->secure_key;
+
+        $customer->logged = 1;
+        $this->context->customer = $customer;
     }
 }

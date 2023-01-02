@@ -36,7 +36,7 @@ class Dashactivity extends Module
     {
         $this->name = 'dashactivity';
         $this->tab = 'dashboard';
-        $this->version = '1.0.0';
+        $this->version = '1.0.1';
         $this->author = 'PrestaShop';
         $this->push_filename = _PS_CACHE_DIR_.'push/activity';
         $this->allow_push = true;
@@ -78,27 +78,18 @@ class Dashactivity extends Module
                 array(
                     _PS_JS_DIR_.'date.js',
                     _PS_JS_DIR_.'tools.js'
-                ) // retro compat themes 1.5
-            );
+                    ) // retro compat themes 1.5
+                );
+            $this->context->controller->addCSS($this->_path.'views/css/'.$this->name.'.css');
         }
     }
 
     public function hookDashboardZoneOne($params)
     {
-        $gapi_mode = 'configure';
-        if (!Module::isInstalled('gapi')) {
-            $gapi_mode = 'install';
-        } elseif (($gapi = Module::getInstanceByName('gapi')) && Validate::isLoadedObject($gapi) && $gapi->isConfigured()) {
-            $gapi_mode = false;
-        }
-
         $this->context->smarty->assign($this->getConfigFieldsValues());
         $this->context->smarty->assign(
             array(
-                'gapi_mode' => $gapi_mode,
                 'dashactivity_config_form' => $this->renderConfigForm(),
-                'date_subtitle' => $this->l('(from %s to %s)'),
-                'date_format' => $this->context->language->date_format_lite,
                 'link' => $this->context->link
             )
         );
@@ -127,7 +118,6 @@ class Dashactivity extends Module
                     'abandoned_cart' => round(rand(5, 50)),
                     'products_out_of_stock' => round(rand(1, 10)),
                     'new_messages' => round(rand(1, 10) * $days),
-                    'product_reviews' => round(rand(5, 50) * $days),
                     'new_customers' => round(rand(1, 5) * $days),
                     'online_visitor' => round($online_visitor),
                     'active_shopping_cart' => round($online_visitor / 10),
@@ -159,52 +149,48 @@ class Dashactivity extends Module
             );
         }
 
-        $gapi = Module::isInstalled('gapi') ? Module::getInstanceByName('gapi') : false;
-        if (Validate::isLoadedObject($gapi) && $gapi->isConfigured()) {
+        $objGoogleAnalytics = Module::isEnabled('qlogoogleanalytics') ? Module::getInstanceByName('qlogoogleanalytics') : false;
+        if (Validate::isLoadedObject($objGoogleAnalytics) && $objGoogleAnalytics->isConfigured()) {
             $visits = $unique_visitors = $online_visitor = 0;
-            if ($result = $gapi->requestReportData('', 'ga:visits,ga:visitors', Tools::substr($params['date_from'], 0, 10), Tools::substr($params['date_to'], 0, 10), null, null, 1, 1)) {
+            if ($result = $objGoogleAnalytics->requestReportData('', 'ga:visits,ga:visitors', Tools::substr($params['date_from'], 0, 10), Tools::substr($params['date_to'], 0, 10), null, null, 1, 1)) {
                 $visits = $result[0]['metrics']['visits'];
                 $unique_visitors = $result[0]['metrics']['visitors'];
             }
         } else {
-            $row = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow('
-						SELECT COUNT(*) as visits, COUNT(DISTINCT `id_guest`) as unique_visitors
-						FROM `'._DB_PREFIX_.'connections`
-						WHERE `date_add` BETWEEN "'.pSQL($params['date_from']).'" AND "'.pSQL($params['date_to']).'"
-						'.Shop::addSqlRestriction(false)
-                    );
+            $row = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow(
+                'SELECT COUNT(*) AS visits, COUNT(DISTINCT `id_guest`) AS unique_visitors
+                FROM `'._DB_PREFIX_.'connections`
+                WHERE `date_add` BETWEEN "'.pSQL($params['date_from']).'" AND "'.pSQL($params['date_to']).'"
+                '.Shop::addSqlRestriction(false)
+            );
             extract($row);
         }
 
-        // Online visitors is only available with Analytics Real Time still in private beta at this time (October 18th, 2013).
-        // if ($result = $gapi->requestReportData('', 'ga:activeVisitors', null, null, null, null, 1, 1))
-        // $online_visitor = $result[0]['metrics']['activeVisitors'];
         if ($maintenance_ips = Configuration::get('PS_MAINTENANCE_IP')) {
             $maintenance_ips = implode(',', array_map('ip2long', array_map('trim', explode(',', $maintenance_ips))));
         }
+
         if (Configuration::get('PS_STATSDATA_CUSTOMER_PAGESVIEWS')) {
-            $sql = 'SELECT c.id_guest, c.ip_address, c.date_add, c.http_referer, pt.name as page
-					FROM `'._DB_PREFIX_.'connections` c
-					LEFT JOIN `'._DB_PREFIX_.'connections_page` cp ON c.id_connections = cp.id_connections
-					LEFT JOIN `'._DB_PREFIX_.'page` p ON p.id_page = cp.id_page
-					LEFT JOIN `'._DB_PREFIX_.'page_type` pt ON p.id_page_type = pt.id_page_type
-					INNER JOIN `'._DB_PREFIX_.'guest` g ON c.id_guest = g.id_guest
-					WHERE (g.id_customer IS NULL OR g.id_customer = 0)
-						'.Shop::addSqlRestriction(false, 'c').'
-						AND cp.`time_end` IS NULL
-					AND TIME_TO_SEC(TIMEDIFF(\''.pSQL(date('Y-m-d H:i:00', time())).'\', cp.`time_start`)) < 900
-					'.($maintenance_ips ? 'AND c.ip_address NOT IN ('.preg_replace('/[^,0-9]/', '', $maintenance_ips).')' : '').'
-					GROUP BY c.id_connections
-					ORDER BY c.date_add DESC';
+            $sql = 'SELECT c.id_guest, c.ip_address, c.date_add, c.http_referer
+                FROM `'._DB_PREFIX_.'connections` c
+                LEFT JOIN `'._DB_PREFIX_.'connections_page` cp ON c.id_connections = cp.id_connections
+                INNER JOIN `'._DB_PREFIX_.'guest` g ON c.id_guest = g.id_guest
+                WHERE (g.id_customer IS NULL OR g.id_customer = 0)
+                    '.Shop::addSqlRestriction(false, 'c').'
+                    AND cp.`time_end` IS NULL
+                AND TIME_TO_SEC(TIMEDIFF(\''.pSQL(date('Y-m-d H:i:00', time())).'\', cp.`time_start`)) < 900
+                '.($maintenance_ips ? 'AND c.ip_address NOT IN ('.preg_replace('/[^,0-9]/', '', $maintenance_ips).')' : '').'
+                GROUP BY c.id_connections
+                ORDER BY c.date_add DESC';
         } else {
             $sql = 'SELECT c.id_guest, c.ip_address, c.date_add, c.http_referer, "-" as page
-					FROM `'._DB_PREFIX_.'connections` c
-					INNER JOIN `'._DB_PREFIX_.'guest` g ON c.id_guest = g.id_guest
-					WHERE (g.id_customer IS NULL OR g.id_customer = 0)
-						'.Shop::addSqlRestriction(false, 'c').'
-						AND TIME_TO_SEC(TIMEDIFF(\''.pSQL(date('Y-m-d H:i:00', time())).'\', c.`date_add`)) < 900
-					'.($maintenance_ips ? 'AND c.ip_address NOT IN ('.preg_replace('/[^,0-9]/', '', $maintenance_ips).')' : '').'
-					ORDER BY c.date_add DESC';
+                FROM `'._DB_PREFIX_.'connections` c
+                INNER JOIN `'._DB_PREFIX_.'guest` g ON c.id_guest = g.id_guest
+                WHERE (g.id_customer IS NULL OR g.id_customer = 0)
+                    '.Shop::addSqlRestriction(false, 'c').'
+                    AND TIME_TO_SEC(TIMEDIFF(\''.pSQL(date('Y-m-d H:i:00', time())).'\', c.`date_add`)) < 900
+                '.($maintenance_ips ? 'AND c.ip_address NOT IN ('.preg_replace('/[^,0-9]/', '', $maintenance_ips).')' : '').'
+                ORDER BY c.date_add DESC';
         }
         Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
         $online_visitor = Db::getInstance()->NumRows();
@@ -213,8 +199,10 @@ class Dashactivity extends Module
 			SELECT COUNT(*)
 			FROM `'._DB_PREFIX_.'orders` o
 			LEFT JOIN `'._DB_PREFIX_.'order_state` os ON (o.current_state = os.id_order_state)
+            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
 			WHERE os.paid = 1 AND os.shipped = 0
-			'.Shop::addSqlRestriction(Shop::SHARE_ORDER)
+			'.Shop::addSqlRestriction(Shop::SHARE_ORDER).
+            (!is_null($params['id_hotel']) ? HotelBranchInformation::addHotelRestriction($params['id_hotel'], 'hbd') : '')
         );
 
         $abandoned_cart = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue('
@@ -288,19 +276,6 @@ class Dashactivity extends Module
             );
         }
 
-        $product_reviews = 0;
-        if (Module::isInstalled('productcomments')) {
-            $product_reviews += Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue('
-				SELECT COUNT(*)
-				FROM `'._DB_PREFIX_.'product_comment` pc
-				LEFT JOIN `'._DB_PREFIX_.'product` p ON (pc.id_product = p.id_product)
-				'.Shop::addSqlAssociation('product', 'p').'
-				WHERE pc.deleted = 0
-				AND pc.`date_add` BETWEEN "'.pSQL($params['date_from']).'" AND "'.pSQL($params['date_to']).'"
-				'.Shop::addSqlRestriction(Shop::SHARE_ORDER)
-            );
-        }
-
         return array(
             'data_value' => array(
                 'pending_orders' => (int)$pending_orders,
@@ -308,7 +283,6 @@ class Dashactivity extends Module
                 'abandoned_cart' => (int)$abandoned_cart,
                 'products_out_of_stock' => (int)$products_out_of_stock,
                 'new_messages' => (int)$new_messages,
-                'product_reviews' => (int)$product_reviews,
                 'new_customers' => (int)$new_customers,
                 'online_visitor' => (int)$online_visitor,
                 'active_shopping_cart' => (int)$active_shopping_cart,
@@ -355,10 +329,10 @@ class Dashactivity extends Module
 
     protected function getReferer($date_from, $date_to, $limit = 3)
     {
-        $gapi = Module::isInstalled('gapi') ? Module::getInstanceByName('gapi') : false;
-        if (Validate::isLoadedObject($gapi) && $gapi->isConfigured()) {
+        $objGoogleAnalytics = Module::isEnabled('qlogoogleanalytics') ? Module::getInstanceByName('qlogoogleanalytics') : false;
+        if (Validate::isLoadedObject($objGoogleAnalytics) && $objGoogleAnalytics->isConfigured()) {
             $websites = array();
-            if ($result = $gapi->requestReportData(
+            if ($result = $objGoogleAnalytics->requestReportData(
                 'ga:source',
                 'ga:visitors',
                 Tools::substr($date_from, 0, 10),

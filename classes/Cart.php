@@ -135,31 +135,34 @@ class CartCore extends ObjectModel
             'add' => 'addWs',
             'update' => 'updateWs'
         ),
-        'fields' => array(
-            'id_address' => array(
-                'xlink_resource' => 'addresses',
-                'getter' => 'getWsIdAddress',
-                'setter' => 'setWsIdAddress',
-            ),
-            'id_currency' => array('xlink_resource' => 'currencies'),
-            'id_customer' => array('xlink_resource' => 'customers'),
-            'id_guest' => array('xlink_resource' => 'guests'),
-            'id_lang' => array('xlink_resource' => 'languages'),
+        'fields' => [
+            'id_currency' => ['xlink_resource' => 'currencies'],
+            'id_customer' => ['xlink_resource' => 'customers'],
+            'id_guest' => ['xlink_resource' => 'guests'],
+            'id_lang' => ['xlink_resource' => 'languages'],
+            'id_address_delivery' => ['xlink_resource' => 'addresses'],
+            'id_address_invoice' => ['xlink_resource' => 'addresses'],
+        ],
+        'hidden_fields' => array (
+            'id_shop',
+            'id_shop_group',
+            'id_carrier',
+            'delivery_option',
+            'allow_seperated_package',
+            'gift',
+            'gift_message',
+            'mobile_theme',
+            'recyclable',
         ),
-
         'associations' => array(
-            // 'cart_rows' => array('resource' => 'cart_row', 'virtual_entity' => true, 'fields' => array(
-            //     'id_product' => array('required' => true, 'xlink_resource' => 'products'),
-            //     'id_product_attribute' => array('required' => true, 'xlink_resource' => 'combinations'),
-            //     'id_address_delivery' => array('required' => true, 'xlink_resource' => 'addresses'),
-            //     'quantity' => array('required' => true),
-            //     )
-            // ),
-
             'cart_bookings' => array(
-                'setter' => false,
                 'resource' => 'booking',
-                'fields' => array('id' => array('required' => true))
+                'fields' => array(
+                    'id_hotel' => array('validate' => 'isUnsignedId', 'required' => true),
+                    'id_product' => array('validate' => 'isUnsignedId', 'required' => true),
+                    'date_from' => array('validate' => 'isDate', 'required' => true),
+                    'date_to' => array('validate' => 'isDate', 'required' => true),
+                )
             ),
         ),
     );
@@ -332,11 +335,7 @@ class CartCore extends ObjectModel
         foreach ($products as $product) {
             // products refer to the cart details
 
-            if (Configuration::get('PS_TAX_ADDRESS_TYPE') == 'id_address_invoice') {
-                $address_id = (int)$cart->id_address_invoice;
-            } else {
-                $address_id = (int)$product['id_address_delivery'];
-            } // Get delivery address of the product from the cart
+            $address_id = Cart::getIdAddressForTaxCalculation($product['id_product']);
             if (!Address::addressExists($address_id)) {
                 $address_id = null;
             }
@@ -627,8 +626,6 @@ class CartCore extends ObjectModel
             return array();
         }
 
-        $ecotax_rate = (float)Tax::getProductEcotaxRate($this->{Configuration::get('PS_TAX_ADDRESS_TYPE')});
-        $apply_eco_tax = Product::$_taxCalculationMethod == PS_TAX_INC && (int)Configuration::get('PS_TAX');
         $cart_shop_context = Context::getContext()->cloneContext();
 
         foreach ($result as &$row) {
@@ -644,11 +641,8 @@ class CartCore extends ObjectModel
                 $row['weight'] = (float)$row['weight_attribute'];
             }
 
-            if (Configuration::get('PS_TAX_ADDRESS_TYPE') == 'id_address_invoice') {
-                $address_id = (int)$this->id_address_invoice;
-            } else {
-                $address_id = (int)$row['id_address_delivery'];
-            }
+            // hotel address for tax calculation
+            $address_id = Cart::getIdAddressForTaxCalculation($row['id_product']);
             if (!Address::addressExists($address_id)) {
                 $address_id = null;
             }
@@ -752,7 +746,16 @@ class CartCore extends ObjectModel
                 $totalPriceByProductTaxExcl = 0;
                 $priceDisplay = Group::getPriceDisplayMethod(Group::getCurrent()->id);
                 foreach ($roomTypesByIdProduct as $key => $cartRoomInfo) {
-                    $roomTotalPrice = HotelRoomTypeFeaturePricing::getRoomTypeTotalPrice($cartRoomInfo['id_product'], $cartRoomInfo['date_from'], $cartRoomInfo['date_to']);
+                    $roomTotalPrice = HotelRoomTypeFeaturePricing::getRoomTypeTotalPrice(
+                        $cartRoomInfo['id_product'],
+                        $cartRoomInfo['date_from'],
+                        $cartRoomInfo['date_to'],
+                        0,
+                        Group::getCurrent()->id,
+                        $cartRoomInfo['id_cart'],
+                        $cartRoomInfo['id_guest'],
+                        $cartRoomInfo['id_room']
+                    );
                     $totalPriceByProductTaxIncl += $roomTotalPrice['total_price_tax_incl'];
                     $totalPriceByProductTaxExcl += $roomTotalPrice['total_price_tax_excl'];
                 }
@@ -1489,7 +1492,6 @@ class CartCore extends ObjectModel
         $price_calculator    = Adapter_ServiceLocator::get('Adapter_ProductPriceCalculator');
         $configuration        = Adapter_ServiceLocator::get('Core_Business_ConfigurationInterface');
 
-        $ps_tax_address_type = $configuration->get('PS_TAX_ADDRESS_TYPE');
         $ps_use_ecotax = $configuration->get('PS_USE_ECOTAX');
         $ps_round_type = $configuration->get('PS_ROUND_TYPE');
         $ps_ecotax_tax_rules_group_id = $configuration->get('PS_ECOTAX_TAX_RULES_GROUP_ID');
@@ -1587,11 +1589,8 @@ class CartCore extends ObjectModel
                 $virtual_context->shop = new Shop((int)$product['id_shop']);
             }
 
-            if ($ps_tax_address_type == 'id_address_invoice') {
-                $id_address = (int)$this->id_address_invoice;
-            } else {
-                $id_address = (int)$product['id_address_delivery'];
-            } // Get delivery address of the product from the cart
+            // hotel address for tax calculation
+            $id_address = Cart::getIdAddressForTaxCalculation($product['id_product']);
             if (!$address_factory->addressExists($id_address)) {
                 $id_address = null;
             }
@@ -1647,7 +1646,12 @@ class CartCore extends ObjectModel
                 $roomTotalPrice = HotelRoomTypeFeaturePricing::getRoomTypeTotalPrice(
                     $cartRoomInfo['id_product'],
                     $cartRoomInfo['date_from'],
-                    $cartRoomInfo['date_to']
+                    $cartRoomInfo['date_to'],
+                    0,
+                    Group::getCurrent()->id,
+                    $cartRoomInfo['id_cart'],
+                    $cartRoomInfo['id_guest'],
+                    $cartRoomInfo['id_room']
                 );
                 if ($with_taxes) {
                     $totalPriceByProduct += $roomTotalPrice['total_price_tax_incl'];
@@ -2632,6 +2636,9 @@ class CartCore extends ObjectModel
      */
     public static function desintifier($int, $delimiter = ',')
     {
+        if (!$int)
+            return;
+
         $delimiter_len = $int[0];
         $int = strrev(substr($int, 1));
         $elm = explode(str_repeat('0', $delimiter_len + 1), $int);
@@ -2683,6 +2690,11 @@ class CartCore extends ObjectModel
             }
         }
         return $collection;
+    }
+
+    public static function getIdAddressForTaxCalculation($id_product)
+    {
+        return HotelRoomType::getHotelIdAddressByIdProduct($id_product);
     }
 
     /**
@@ -4275,28 +4287,6 @@ class CartCore extends ObjectModel
         return 0;
     }
 
-    // Webservice:: Get id_address in the cart
-    public function getWsIdAddress()
-    {
-        return Db::getInstance()->getValue(
-            'SELECT id_address_delivery FROM `'._DB_PREFIX_.'cart`
-            WHERE id_cart = '.(int)$this->id
-        );
-    }
-
-    // Webservice :: Set id_address in the cart
-    public function setWsIdAddress($id_address)
-    {
-        if ($this->id) {
-            return Db::getInstance()->execute(
-                'UPDATE `'._DB_PREFIX_.'cart`
-                SET `id_address_delivery` = '.(int)$id_address.', `id_address_invoice` = '.(int)$id_address.'
-                WHERE `id_cart` = '.(int)$this->id
-            );
-        }
-        return false;
-    }
-
     // Webservice:: Get booking rows
     public function getWsCartBookings()
     {
@@ -4317,10 +4307,10 @@ class CartCore extends ObjectModel
         $postData = trim(file_get_contents('php://input'));
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string(utf8_decode($postData));
-        $cartData = Tools::jsonDecode(Tools::jsonEncode($xml, true));
+        $cartData = json_decode(json_encode($xml, true));
 
-        $this->id_address_delivery = $cartData->cart->id_address;
-        $this->id_address_invoice = $cartData->cart->id_address;
+        $this->id_address_delivery = $cartData->cart->id_address_delivery;
+        $this->id_address_invoice = $cartData->cart->id_address_invoice;
 
         if ($this->add($autodate, $null_values)) {
             // set bookings for the cart
@@ -4328,6 +4318,8 @@ class CartCore extends ObjectModel
             if (isset($bookingRows->id_hotel)) {
                 $bookingRows = array($bookingRows);
             }
+            $this->setWsCartRooms($bookingRows);
+
             return true;
         }
 
@@ -4344,10 +4336,11 @@ class CartCore extends ObjectModel
         $postData = trim(file_get_contents('php://input'));
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string(utf8_decode($postData));
-        $cartData = Tools::jsonDecode(Tools::jsonEncode($xml, true));
+        $cartData = json_decode(json_encode($xml, true));
 
-        $this->id_address_delivery = $cartData->cart->id_address;
-        $this->id_address_invoice = $cartData->cart->id_address;
+
+        $this->id_address_delivery = $cartData->cart->id_address_delivery;
+        $this->id_address_invoice = $cartData->cart->id_address_invoice;
 
         if ($this->update($autodate, $null_values)) {
             // set bookings for the cart
@@ -4384,14 +4377,13 @@ class CartCore extends ObjectModel
 
             $extraDemands = null;
             foreach ($bookingRows as $booking) {
-                $booking = Tools::jsonDecode(Tools::jsonEncode($booking, true), true);
+                $booking = json_decode(json_encode($booking, true), true);
                 if (isset($booking['extra_demands']['extra_demand'])) {
                     $extraDemands = $booking['extra_demands']['extra_demand'];
                     if (isset($extraDemands['id_global_demand'])) {
                         $extraDemands = array($extraDemands);
                     }
-                    // $extraDemands = Tools::jsonDecode($extraDemands, true);
-                    $extraDemands = Tools::jsonEncode($extraDemands);
+                    $extraDemands = json_encode($extraDemands);
                 }
 
                 // get room booking info
@@ -4489,7 +4481,7 @@ class CartCore extends ObjectModel
                                 $objCartBooking->id_product = $val_hotel_room_info['id_product'];
                                 $objCartBooking->id_room = $val_hotel_room_info['id_room'];
                                 $objCartBooking->id_hotel = $val_hotel_room_info['id_hotel'];
-                                $objCartBooking->booking_type = 1;
+                                $objCartBooking->booking_type = HotelBookingDetail::ALLOTMENT_AUTO;
                                 $objCartBooking->quantity = $numDays;
                                 $objCartBooking->extra_demands = $extraDemands;
                                 $objCartBooking->date_from = $dateFrom;

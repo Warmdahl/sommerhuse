@@ -74,7 +74,7 @@
 						</td>
 						<td class="product center">
 							<p class="text-center">
-								{displayPrice currency=$order->id_currency price=$rm_v['paid_unit_price_tax_incl']}
+								{displayPrice currency=$order->id_currency price=$rm_v['avg_paid_unit_price_tax_excl']}
 							</p>
 						</td>
 						<td class="product center">
@@ -84,12 +84,12 @@
 						</td>
 						<td class="product center">
 							<p>
-								{$rm_v['data_form']|date_format:"%d-%m-%Y"}
+								{$rm_v['data_form']}
 							</p>
 						</td>
 						<td class="product center">
 							<p>
-								{$rm_v['data_to']|date_format:"%d-%m-%Y"}
+								{$rm_v['data_to']}
 							</p>
 						</td>
 						<td class="product center">

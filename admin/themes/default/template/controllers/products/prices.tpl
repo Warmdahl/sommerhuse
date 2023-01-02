@@ -129,7 +129,7 @@ $(document).ready(function () {
 	<div class="form-group">
 		<div class="col-lg-1"><span class="pull-right">{include file="controllers/products/multishop/checkbox.tpl" field="price" type="price"}</span></div>
 		<label class="control-label col-lg-2" for="priceTE">
-			<span class="label-tooltip" data-toggle="tooltip" title="{l s='The pre-tax retail price is the price for which you intend sell this room type to your customers. It should be higher than the pre-tax wholesale price: the difference between the two will be your margin.'}">{if !$country_display_tax_label || $tax_exclude_taxe_option}{l s='Retail price'}{else}{l s='Pre-tax retail price'}{/if}</span>
+			<span class="label-tooltip" data-toggle="tooltip" title="{l s='The pre-tax retail price is the price for which you intend sell this room type to your customers. It should be higher than the pre-tax operating cost: the difference between the two will be your margin.'}">{if !$country_display_tax_label || $tax_exclude_taxe_option}{l s='Retail price'}{else}{l s='Pre-tax retail price'}{/if}</span>
 		</label>
 		<div class="col-lg-2">
 			<div class="input-group">
@@ -413,21 +413,21 @@ $(document).ready(function () {
 								{$featurePlan['feature_price_name']}
 							</td>
 							<td>
-								{if $featurePlan['impact_type'] == 1}
+								{if $featurePlan['impact_type'] == HotelRoomTypeFeaturePricing::IMPACT_TYPE_PERCENTAGE}
 									{l s='Percentage'}
 								{else}
 									{l s='Fixed Amount'}
 								{/if}
 							</td>
 							<td>
-								{if $featurePlan['impact_way'] == 1}
+								{if $featurePlan['impact_way'] == HotelRoomTypeFeaturePricing::IMPACT_WAY_DECREASE}
 									{l s='Decrease'}
 								{else}
 									{l s='Increase'}
 								{/if}
 							</td>
 							<td>
-								{if $featurePlan['impact_type'] == 1}
+								{if $featurePlan['impact_type'] == HotelRoomTypeFeaturePricing::IMPACT_TYPE_PERCENTAGE}
 									{$featurePlan['impact_value']|round:2}%
 								{else}
 									{displayPrice price=$featurePlan['impact_value']}
@@ -437,7 +437,7 @@ $(document).ready(function () {
 								{dateFormat date=$featurePlan['date_from'] full=0}
 							</td>
 							<td>
-								{if $featurePlan['date_selection_type'] == 1}
+								{if $featurePlan['date_selection_type'] == HotelRoomTypeFeaturePricing::DATE_SELECTION_TYPE_RANGE}
 									{dateFormat date=$featurePlan['date_to'] full=0}
 								{else}
 									<span class="badge badge-success">{l s='Specific date'}</span>

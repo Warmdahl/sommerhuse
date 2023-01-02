@@ -25,7 +25,7 @@
 */
 
 /* Theme URLs */
-define('_PS_DEFAULT_THEME_NAME_',        'default-bootstrap');
+define('_PS_DEFAULT_THEME_NAME_',        'hotel-reservation-theme');
 define('_PS_THEME_DIR_',                _PS_ROOT_DIR_.'/themes/'._THEME_NAME_.'/');
 define('_THEMES_DIR_',                    __PS_BASE_URI__.'themes/');
 define('_THEME_DIR_',                    _THEMES_DIR_._THEME_NAME_.'/');
@@ -71,6 +71,7 @@ define('_THEME_COL_DIR_',                _PS_IMG_.'co/');
 define('_THEME_GENDERS_DIR_',            _PS_IMG_.'genders/');
 define('_SUPP_DIR_',                    _PS_IMG_.'su/');
 define('_PS_PROD_IMG_',                    _PS_IMG_.'p/');
+define('_PS_HOTEL_IMG_',                    __PS_BASE_URI__.'modules/hotelreservationsystem/views/img/hotel_img/');
 
 /* Other URLs */
 define('_PS_JS_DIR_',                    __PS_BASE_URI__.'js/');
@@ -82,6 +83,7 @@ define('_MODULE_DIR_',                    __PS_BASE_URI__.'modules/');
 /* Define API URLs if not defined before */
 Tools::safeDefine('_PS_API_DOMAIN_',                'api.prestashop.com');
 Tools::safeDefine('_PS_API_URL_',                    'http://'._PS_API_DOMAIN_);
-Tools::safeDefine('_PS_TAB_MODULE_LIST_URL_',        _PS_API_URL_.'/xml/tab_modules_list.xml');
-Tools::safeDefine('_PS_API_MODULES_LIST_16_',        _PS_API_DOMAIN_.'/xml/modules_list_16.xml');
 Tools::safeDefine('_PS_CURRENCY_FEED_URL_',            _PS_API_URL_.'/xml/currencies.xml');
+Tools::safeDefine('_QLO_API_DOMAIN_',                'api.qloapps.com');
+Tools::safeDefine('_QLO_API_URL_',                    'https://'._QLO_API_DOMAIN_);
+Tools::safeDefine('_QLO_TAB_MODULE_LIST_URL_',        _QLO_API_URL_.'/xml/tab_modules_list.xml');

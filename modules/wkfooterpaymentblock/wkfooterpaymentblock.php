@@ -22,18 +22,17 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once dirname(__FILE__).'/classes/WkFooterPaymentBlockDb.php';
 require_once dirname(__FILE__).'/classes/WkFooterPaymentBlockInfo.php';
 
 class WkFooterPaymentBlock extends Module
 {
-    const INSTALL_SQL_FILE = 'install.sql';
-
     public function __construct()
     {
         $this->name = 'wkfooterpaymentblock';
         $this->tab = 'front_office_features';
-        $this->version = '1.1.3';
-        $this->author = 'webkul';
+        $this->version = '1.1.4';
+        $this->author = 'Webkul';
         $this->need_instance = 0;
 
         $this->bootstrap = true;
@@ -44,12 +43,17 @@ class WkFooterPaymentBlock extends Module
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
     }
 
+    public function getContent()
+    {
+        Tools::redirectAdmin($this->context->link->getAdminLink('AdminFooterPaymentBlockSetting'));
+    }
+
     public function hookFooter($params)
     {
         $objPaymentBlockInfo = new WkFooterPaymentBlockInfo();
         if ($allPaymentBlocks = $objPaymentBlockInfo->getAllPaymentBlocks(1, 'position')) {
             $this->context->smarty->assign('allPaymentBlocks', $allPaymentBlocks);
-            $this->context->controller->addCSS(_PS_MODULE_DIR_.$this->name.'/views/css/wkFooterPaymentBlockFront.css');
+            $this->context->controller->addCSS($this->_path.'/views/css/wkFooterPaymentBlockFront.css');
             return $this->display(__FILE__, 'wkFooterPaymentBlock.tpl');
         }
     }
@@ -58,15 +62,7 @@ class WkFooterPaymentBlock extends Module
     {
         return $this->hookFooter($params);
     }
-
-    public function hookDisplayAddModuleSettingLink()
-    {
-        $footerPaymentBlockLink = $this->context->link->getAdminLink('AdminFooterPaymentBlockSetting');
-        $this->context->smarty->assign('footerPaymentBlockLink', $footerPaymentBlockLink);
-
-        return $this->display(__FILE__, 'footerPaymentSettingLink.tpl');
-    }
-
+    
     public function callInstallTab()
     {
         //Controllers which are to be used in this modules but we have not to create tab for those controllers...
@@ -99,25 +95,10 @@ class WkFooterPaymentBlock extends Module
 
     public function install()
     {
-        if (!file_exists(dirname(__FILE__).'/'.self::INSTALL_SQL_FILE)) {
-            return false;
-        } elseif (!$sql = Tools::file_get_contents(dirname(__FILE__).'/'.self::INSTALL_SQL_FILE)) {
-            return false;
-        }
-
-        $sql = str_replace(array('PREFIX_',  'ENGINE_TYPE'), array(_DB_PREFIX_, _MYSQL_ENGINE_), $sql);
-        $sql = preg_split("/;\s*[\r\n]+/", $sql);
-
-        foreach ($sql as $query) {
-            if ($query) {
-                if (!Db::getInstance()->execute(trim($query))) {
-                    return false;
-                }
-            }
-        }
+        $objFooterPaymentBlockDb = new WkFooterPaymentBlockDb();
         if (!parent::install()
+            || !$objFooterPaymentBlockDb->createTables()
             ||!$this->registerHook('displayFooterPaymentInfo')
-            ||!$this->registerHook('displayAddModuleSettingLink')
             || !$this->callInstallTab()
             || !$this->insertDefaultModuleData()
         ) {
@@ -128,13 +109,13 @@ class WkFooterPaymentBlock extends Module
 
     public function uninstall()
     {
+        $objFooterPaymentBlockDb = new WkFooterPaymentBlockDb();
         if (!parent::uninstall()
             || !$this->uninstallTab()
-            || !$this->dropTables()
+            || !$objFooterPaymentBlockDb->dropTables()
         ) {
             return false;
         }
-
         return true;
     }
 
@@ -148,13 +129,6 @@ class WkFooterPaymentBlock extends Module
         }
 
         return true;
-    }
-
-    private function dropTables()
-    {
-        return Db::getInstance()->execute(
-            'DROP TABLE IF EXISTS `'._DB_PREFIX_.'htl_footer_payment_block_info`'
-        );
     }
 
     public function insertDefaultModuleData()

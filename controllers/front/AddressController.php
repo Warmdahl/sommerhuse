@@ -45,7 +45,6 @@ class AddressControllerCore extends FrontController
     {
         parent::setMedia();
         $this->addJS(array(
-            _THEME_JS_DIR_.'tools/vatManagement.js',
             _THEME_JS_DIR_.'tools/statesManagement.js',
             _PS_JS_DIR_.'validate.js'
         ));
@@ -69,7 +68,7 @@ class AddressControllerCore extends FrontController
                 $id_address = (int)$this->context->cart->id_address_invoice;
             }
         } else {
-            $id_address = (int)Tools::getValue('id_address', 0);
+            $id_address = Customer::getCustomerIdAddress($this->context->customer->id);
         }
 
         // Initialize address
@@ -92,7 +91,7 @@ class AddressControllerCore extends FrontController
             } elseif ($this->ajax) {
                 exit;
             } else {
-                Tools::redirect('index.php?controller=addresses');
+                // Tools::redirect('index.php?controller=addresses');
             }
         }
     }
@@ -204,7 +203,7 @@ class AddressControllerCore extends FrontController
                     'hasError' => (bool)$this->errors,
                     'errors' => $this->errors
                 );
-                $this->ajaxDie(Tools::jsonEncode($return));
+                $this->ajaxDie(json_encode($return));
             }
         }
 
@@ -231,7 +230,7 @@ class AddressControllerCore extends FrontController
                     'id_address_delivery' => (int)$this->context->cart->id_address_delivery,
                     'id_address_invoice' => (int)$this->context->cart->id_address_invoice
                 );
-                $this->ajaxDie(Tools::jsonEncode($return));
+                $this->ajaxDie(json_encode($return));
             }
 
             // Redirect to old page or current page
@@ -242,7 +241,7 @@ class AddressControllerCore extends FrontController
                 $mod = Tools::getValue('mod');
                 Tools::redirect('index.php?controller='.$back.($mod ? '&back='.$mod : ''));
             } else {
-                Tools::redirect('index.php?controller=addresses');
+                Tools::redirect('index.php?controller=address');
             }
         }
         $this->errors[] = Tools::displayError('An error occurred while updating your address.');
@@ -257,7 +256,6 @@ class AddressControllerCore extends FrontController
         parent::initContent();
 
         $this->assignCountries();
-        $this->assignVatNumber();
         $this->assignAddressFormat();
 
         // Assign common vars
@@ -331,32 +329,6 @@ class AddressControllerCore extends FrontController
         ));
     }
 
-    /**
-     * Assign template vars related to vat number
-     * @todo move this in vatnumber module !
-     */
-    protected function assignVatNumber()
-    {
-        $vat_number_exists = file_exists(_PS_MODULE_DIR_.'vatnumber/vatnumber.php');
-        $vat_number_management = Configuration::get('VATNUMBER_MANAGEMENT');
-        if ($vat_number_management && $vat_number_exists) {
-            include_once(_PS_MODULE_DIR_.'vatnumber/vatnumber.php');
-        }
-
-        if ($vat_number_management && $vat_number_exists && VatNumber::isApplicable((int)Tools::getCountry())) {
-            $vat_display = 2;
-        } elseif ($vat_number_management) {
-            $vat_display = 1;
-        } else {
-            $vat_display = 0;
-        }
-
-        $this->context->smarty->assign(array(
-            'vatnumber_ajax_call' => file_exists(_PS_MODULE_DIR_.'vatnumber/ajax.php'),
-            'vat_display' => $vat_display,
-        ));
-    }
-
     public function displayAjax()
     {
         if (count($this->errors)) {
@@ -364,7 +336,7 @@ class AddressControllerCore extends FrontController
                 'hasError' => !empty($this->errors),
                 'errors' => $this->errors
             );
-            $this->ajaxDie(Tools::jsonEncode($return));
+            $this->ajaxDie(json_encode($return));
         }
     }
 }

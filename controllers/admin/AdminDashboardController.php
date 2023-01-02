@@ -26,6 +26,9 @@
 
 class AdminDashboardControllerCore extends AdminController
 {
+
+    const DASHBOARD_RECOMMENDATION_CONTENT = '/cache/dashboard_recommendation.html';
+
     public function __construct()
     {
         $this->bootstrap = true;
@@ -70,13 +73,11 @@ class AdminDashboardControllerCore extends AdminController
     {
         $forms = array();
         $currency = new Currency(Configuration::get('PS_CURRENCY_DEFAULT'));
-        $carriers = Carrier::getCarriers($this->context->language->id, true, false, false, null, 'ALL_CARRIERS');
         $modules = Module::getModulesOnDisk(true);
 
         $forms = array(
+            'net_profit' => array('title' => $this->l('Net Profit settings'), 'id' => 'net_profit'),
             'payment' => array('title' => $this->l('Average bank fees per payment method'), 'id' => 'payment'),
-            'carriers' => array('title' => $this->l('Average shipping fees per shipping method'), 'id' => 'carriers'),
-            'other' => array('title' => $this->l('Other settings'), 'id' => 'other')
         );
         foreach ($forms as &$form) {
             $form['icon'] = 'tab-preferences';
@@ -133,32 +134,9 @@ class AdminDashboardControllerCore extends AdminController
             }
         }
 
-        foreach ($carriers as $carrier) {
-            $forms['carriers']['fields']['CONF_'.strtoupper($carrier['id_reference']).'_SHIP'] = array(
-                'title' => $carrier['name'],
-                'desc' => sprintf($this->l('For the carrier named %s, indicate the domestic delivery costs  in percentage of the price charged to customers.'), $carrier['name']),
-                'validation' => 'isPercentage',
-                'cast' => 'floatval',
-                'type' => 'text',
-                'defaultValue' => '0',
-                'suffix' => '%'
-            );
-            $forms['carriers']['fields']['CONF_'.strtoupper($carrier['id_reference']).'_SHIP_OVERSEAS'] = array(
-                'title' => $carrier['name'],
-                'desc' => sprintf($this->l('For the carrier named %s, indicate the overseas delivery costs in percentage of the price charged to customers.'), $carrier['name']),
-                'validation' => 'isPercentage',
-                'cast' => 'floatval',
-                'type' => 'text',
-                'defaultValue' => '0',
-                'suffix' => '%'
-            );
-        }
-
-        $forms['carriers']['description'] = $this->l('Method: Indicate the percentage of your carrier margin. For example, if you charge $10 of shipping fees to your customer for each shipment, but you really pay $4 to this carrier, then you should indicate "40" in the percentage field.');
-
-        $forms['other']['fields']['CONF_AVERAGE_PRODUCT_MARGIN'] = array(
+        $forms['net_profit']['fields']['CONF_AVERAGE_PRODUCT_MARGIN'] = array(
             'title' => $this->l('Average gross margin percentage'),
-            'desc' => $this->l('You should calculate this percentage as follows: ((total sales revenue) - (cost of goods sold)) / (total sales revenue) * 100. This value is only used to calculate the Dashboard approximate gross margin, if you do not specify the wholesale price for each product.'),
+            'desc' => $this->l('You should calculate this percentage as follows: ((total sales revenue) - (total operating cost)) / (total sales revenue) * 100. This value is only used to calculate Dashboard approximate gross margin, if you do not specify operating cost for each room type.'),
             'validation' => 'isPercentage',
             'cast' => 'intval',
             'type' => 'text',
@@ -166,7 +144,7 @@ class AdminDashboardControllerCore extends AdminController
             'suffix' => '%'
         );
 
-        $forms['other']['fields']['CONF_ORDER_FIXED'] = array(
+        $forms['net_profit']['fields']['CONF_ORDER_FIXED'] = array(
             'title' => $this->l('Other fees per order'),
             'desc' => $this->l('You should calculate this value by making the sum of all of your additional costs per order.'),
             'validation' => 'isPrice',
@@ -200,8 +178,8 @@ class AdminDashboardControllerCore extends AdminController
         // 	'Save' => $this->l('Save', 'AdminStatsTab')
         // );
 
-        $test_stats_date_update = $this->context->cookie->__get('stats_date_update');
-        if (!empty($test_stats_date_update) && $this->context->cookie->__get('stats_date_update') < strtotime(date('Y-m-d'))) {
+        $test_stats_date_update = $this->context->cookie->stats_date_update;
+        if (!empty($test_stats_date_update) && $this->context->cookie->stats_date_update < strtotime(date('Y-m-d'))) {
             switch ($this->context->employee->preselect_date_range) {
                 case 'day':
                     $date_from = date('Y-m-d');
@@ -232,8 +210,12 @@ class AdminDashboardControllerCore extends AdminController
             $this->context->employee->stats_date_from = $date_from;
             $this->context->employee->stats_date_to = $date_to;
             $this->context->employee->update();
-            $this->context->cookie->__set('stats_date_update', strtotime(date('Y-m-d')));
+            $this->context->cookie->stats_date_update = strtotime(date('Y-m-d'));
             $this->context->cookie->write();
+        }
+
+        if (!$this->context->cookie->stats_id_hotel) {
+            $this->context->cookie->stats_id_hotel = false;
         }
 
         $calendar_helper = new HelperCalendar();
@@ -256,45 +238,62 @@ class AdminDashboardControllerCore extends AdminController
         $calendar_helper->setCompareDateTo($stats_compare_to);
         $calendar_helper->setCompareOption(Tools::getValue('compare_date_option', $this->context->employee->stats_compare_option));
 
+        Media::addJsDef(array(
+            'date_subtitle' => $this->l('(from %s to %s)'),
+            'date_format' => $this->context->language->date_format_lite,
+        ));
+
         $params = array(
             'date_from' => $this->context->employee->stats_date_from,
-            'date_to' => $this->context->employee->stats_date_to
+            'date_to' => $this->context->employee->stats_date_to,
+            'id_hotel' => (int) $this->context->cookie->stats_id_hotel,
         );
+
+        $objHotelInfo = new HotelBranchInformation();
+        $idsHotel = $objHotelInfo->getProfileAccessedHotels($this->context->employee->id_profile, 1, 1);
+        $hotelOptions = array(array('id_hotel' => false, 'hotel_name' => $this->l('All Hotels')));
+        foreach ($idsHotel as $idHotel) {
+            $objHotelBranchInfo = new HotelBranchInformation($idHotel, $this->context->language->id);
+            $hotelAddressInfo = $objHotelBranchInfo->getAddress($idHotel);
+            $hotelOptions[] = array(
+                'id_hotel' => (int) $idHotel,
+                'hotel_name' => $objHotelBranchInfo->hotel_name.', '.$hotelAddressInfo['city'],
+            );
+        }
+
+        if (file_exists(_PS_ROOT_DIR_.Upgrader::CACHE_FILE_UPGRADE_AVAILABE)) {
+            $content = Tools::file_get_contents( _PS_ROOT_DIR_.Upgrader::CACHE_FILE_UPGRADE_AVAILABE);
+            $upgradeInfo = simplexml_load_string($content);
+            $this->context->smarty->assign(array(
+                'upgrade_info' => $upgradeInfo
+            ));
+        }
 
         $this->tpl_view_vars = array(
             'date_from' => $this->context->employee->stats_date_from,
             'date_to' => $this->context->employee->stats_date_to,
+            'id_hotel' => (int) $this->context->cookie->stats_id_hotel,
+            'hotel_options' => $hotelOptions,
+            'hookDashboardTop' => Hook::exec('dashboardTop', $params),
             'hookDashboardZoneOne' => Hook::exec('dashboardZoneOne', $params),
             'hookDashboardZoneTwo' => Hook::exec('dashboardZoneTwo', $params),
             'hookDashboardZoneThree' => Hook::exec('dashboardZoneThree', $params),
             //'translations' => $translations,
-            'action' => '#',
+            'action' => self::$currentIndex.'&token='.$this->token,
             'warning' => $this->getWarningDomainName(),
-            'new_version_url' => Tools::getCurrentUrlProtocolPrefix()._PS_API_DOMAIN_.'/version/check_version.php?v='._PS_VERSION_.'&lang='.$this->context->language->iso_code.'&autoupgrade='.(int)(Module::isInstalled('autoupgrade') && Module::isEnabled('autoupgrade')).'&hosted_mode='.(int)defined('_PS_HOST_MODE_'),
+            'new_version_url' => Tools::getCurrentUrlProtocolPrefix()._QLO_API_DOMAIN_.'/index.php?version='._QLOAPPS_VERSION_.'&lang='.$this->context->language->iso_code.'&method=check-version&autoupgrade='.(int)(Module::isInstalled('qloautoupgrade') && Module::isEnabled('qloautoupgrade')).'&hosted_mode='.(int)defined('_PS_HOST_MODE_'),
             'dashboard_use_push' => Configuration::get('PS_DASHBOARD_USE_PUSH'),
             'calendar' => $calendar_helper->generate(),
             'PS_DASHBOARD_SIMULATION' => Configuration::get('PS_DASHBOARD_SIMULATION'),
             'datepickerFrom' => Tools::getValue('datepickerFrom', $this->context->employee->stats_date_from),
             'datepickerTo' => Tools::getValue('datepickerTo', $this->context->employee->stats_date_to),
-            'preselect_date_range' => Tools::getValue('preselectDateRange', $this->context->employee->preselect_date_range)
+            'preselect_date_range' => Tools::getValue('preselectDateRange', $this->context->employee->preselect_date_range),
         );
         return parent::renderView();
     }
 
     public function postProcess()
     {
-        if (Tools::isSubmit('submitDateRealTime')) {
-            if ($use_realtime = (int)Tools::getValue('submitDateRealTime')) {
-                $this->context->employee->stats_date_from = date('Y-m-d');
-                $this->context->employee->stats_date_to = date('Y-m-d');
-                $this->context->employee->stats_compare_option = HelperCalendar::DEFAULT_COMPARE_OPTION;
-                $this->context->employee->stats_compare_from = null;
-                $this->context->employee->stats_compare_to = null;
-                $this->context->employee->update();
-            }
-            Configuration::updateValue('PS_DASHBOARD_USE_PUSH', $use_realtime);
-        }
-
         if (Tools::isSubmit('submitDateRange')) {
             if (!Validate::isDate(Tools::getValue('date_from'))
                 || !Validate::isDate(Tools::getValue('date_to'))) {
@@ -324,6 +323,22 @@ class AdminDashboardControllerCore extends AdminController
                 }
 
                 $this->context->employee->update();
+                Tools::redirectAdmin(self::$currentIndex.'&token='.$this->token);
+            }
+        }
+
+        if (Tools::isSubmit('submitStatsHotel')) {
+            $statsIdHotel = Tools::getValue('stats_id_hotel');
+            if ($statsIdHotel) {
+                $objHotelInfo = new HotelBranchInformation();
+                $idsHotel = $objHotelInfo->getProfileAccessedHotels($this->context->employee->id_profile, 1, 1);
+                if (is_array($idsHotel) && count($idsHotel) && !in_array($statsIdHotel, $idsHotel)) {
+                    $this->errors[] = $this->l('No permission for requested hotel.');
+                }
+            }
+            if (!count($this->errors)) {
+                $this->context->cookie->stats_id_hotel = $statsIdHotel;
+                Tools::redirectAdmin(self::$currentIndex.'&token='.$this->token);
             }
         }
 
@@ -364,13 +379,14 @@ class AdminDashboardControllerCore extends AdminController
         $params = array(
             'date_from' => $this->context->employee->stats_date_from,
             'date_to' => $this->context->employee->stats_date_to,
+            'id_hotel' => (int) $this->context->cookie->stats_id_hotel,
             'compare_from' => $this->context->employee->stats_compare_from,
             'compare_to' => $this->context->employee->stats_compare_to,
             'dashboard_use_push' => (int)Tools::getValue('dashboard_use_push'),
-            'extra' => (int)Tools::getValue('extra')
+            'extra' => Tools::getValue('extra')
         );
 
-        die(Tools::jsonEncode(Hook::exec('dashboardData', $params, $id_module, true, true, (int)Tools::getValue('dashboard_use_push'))));
+        die(json_encode(Hook::exec('dashboardData', $params, $id_module, true, true, (int)Tools::getValue('dashboard_use_push'))));
     }
 
     public function ajaxProcessSetSimulationMode()
@@ -382,7 +398,7 @@ class AdminDashboardControllerCore extends AdminController
     public function ajaxProcessGetBlogRss()
     {
         $return = array('has_errors' => false, 'rss' => array());
-        if (!$this->isFresh('/config/xml/blog-'.$this->context->language->iso_code.'.xml', 86400)) {
+        if (!$this->isFresh('/config/xml/blog-'.$this->context->language->iso_code.'.xml', _TIME_1_DAY_)) {
             if (!$this->refresh('/config/xml/blog-'.$this->context->language->iso_code.'.xml', _PS_API_URL_.'/rss/blog/blog-'.$this->context->language->iso_code.'.xml')) {
                 $return['has_errors'] = true;
             }
@@ -437,7 +453,7 @@ class AdminDashboardControllerCore extends AdminController
                 }
             }
         }
-        die(Tools::jsonEncode($return));
+        die(json_encode($return));
     }
 
     public function ajaxProcessSaveDashConfig()
@@ -475,6 +491,27 @@ class AdminDashboardControllerCore extends AdminController
             $return['widget_html'] = $module_obj->$hook($params);
         }
 
-        die(Tools::jsonEncode($return));
+        die(json_encode($return));
+    }
+
+    public function ajaxProcessGetRecommendationContent()
+    {
+        $response = array('success' => false);
+        if ($content = $this->getRecommendationContent()) {
+            $response['success'] = true;
+            $response['content'] = $content;
+        }
+        $this->ajaxDie(json_encode($response));
+    }
+
+    public function getRecommendationContent()
+    {
+        if (!$this->isFresh(self::DASHBOARD_RECOMMENDATION_CONTENT, _TIME_1_DAY_)) {
+            @file_put_contents(_PS_ROOT_DIR_.self::DASHBOARD_RECOMMENDATION_CONTENT, Tools::addonsRequest('dashboard-recommendation'));
+        }
+        if (file_exists(_PS_ROOT_DIR_.self::DASHBOARD_RECOMMENDATION_CONTENT)) {
+            return Tools::file_get_contents(_PS_ROOT_DIR_.self::DASHBOARD_RECOMMENDATION_CONTENT);
+        }
+        return false;
     }
 }
