@@ -34,7 +34,7 @@ class blockcart extends Module
     {
         $this->name = 'blockcart';
         $this->tab = 'front_office_features';
-        $this->version = '1.6.4';
+        $this->version = '1.6.3';
         $this->author = 'PrestaShop';
         $this->need_instance = 0;
 
@@ -46,7 +46,7 @@ class blockcart extends Module
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
     }
 
-    public function getContentVars($params)
+    public function assignContentVars($params)
     {
         global $errors;
 
@@ -60,7 +60,6 @@ class blockcart extends Module
         $taxCalculationMethod = Group::getPriceDisplayMethod((int) Group::getCurrent()->id);
 
         $useTax = !($taxCalculationMethod == PS_TAX_EXC);
-        $showTax = (int) (Configuration::get('PS_TAX_DISPLAY') == 1 && (int) Configuration::get('PS_TAX'));
 
         $products = $params['cart']->getProducts(true);
 
@@ -71,44 +70,8 @@ class blockcart extends Module
             }
         }
 
-        $priceDisplayMethod = Product::getTaxCalculationMethod((int)$this->context->cookie->id_customer);
         $nbTotalProducts = 0;
-        foreach ($products as &$product) {
-            $product['id'] = $product['id_product'];
-            $product['link'] = $this->context->link->getProductLink(
-                $product['id_product'],
-                $product['link_rewrite'],
-                $product['category'],
-                null,
-                null,
-                $product['id_shop'],
-                $product['id_product_attribute']
-            );
-            $product['image'] = $this->context->link->getImageLink(
-                $product['link_rewrite'],
-                $product['id_image'],
-                'home_default'
-            );
-            $product['image_cart'] = $this->context->link->getImageLink(
-                $product['link_rewrite'],
-                $product['id_image'],
-                'cart_default'
-            );
-            if ($priceDisplayMethod == PS_TAX_EXC) {
-                $product['priceByLine'] = Tools::displayPrice($product['total']);
-                $product['price'] = Tools::displayPrice($product['total']);
-                $product['total_product_price'] = $product['total'];
-            } else {
-                $product['priceByLine'] = Tools::displayPrice($product['total_wt']);
-                $product['price'] = Tools::displayPrice($product['total_wt']);
-                $product['total_product_price'] = $product['total_wt'];
-            }
-            $product['price_float'] = $product['total'];
-            $product['idCombination'] = isset($product['attributes_small']) ? $product['attributes_small'] : 0;
-            $product['idAddressDelivery'] = isset($product['id_address_delivery']) ? $product['id_address_delivery'] : 0;
-            $product['is_gift'] = (isset($product['is_gift']) && $product['is_gift'] )? true : false;
-            $product['hasCustomizedDatas'] = false;
-            $product['hasAttributes'] = false;
+        foreach ($products as $product) {
             $nbTotalProducts += (int) $product['cart_quantity'];
         }
         $cart_rules = $params['cart']->getCartRules();
@@ -128,14 +91,12 @@ class blockcart extends Module
         $shipping_cost_float = Tools::convertPrice($base_shipping, $currency);
         $wrappingCost = (float) ($params['cart']->getOrderTotal($useTax, Cart::ONLY_WRAPPING));
         $totalToPay = $params['cart']->getOrderTotal($useTax);
-        $tax_cost = 0;
-        if ($showTax) {
+        if ($useTax && Configuration::get('PS_TAX_DISPLAY') == 1) {
             $totalToPayWithoutTaxes = $params['cart']->getOrderTotal(false);
-            $tax_cost = Tools::displayPrice($totalToPay - $totalToPayWithoutTaxes, $currency);
+            $this->smarty->assign('tax_cost', Tools::displayPrice($totalToPay - $totalToPayWithoutTaxes, $currency));
         }
 
         // The cart content is altered for display
-        $orderProcess = Configuration::get('PS_ORDER_PROCESS_TYPE') ? 'order-opc' : 'order';
         foreach ($cart_rules as &$cart_rule) {
             if ($cart_rule['free_shipping']) {
                 $shipping_cost = Tools::displayPrice(0, $currency);
@@ -160,16 +121,6 @@ class blockcart extends Module
                     }
                 }
             }
-            $cart_rule['id'] = $cart_rule['id_discount'];
-            $cart_rule['link'] = $this->context->link->getPageLink($orderProcess, true, NULL, "deleteDiscount=".$cart_rule['id_discount']);
-            if ($priceDisplayMethod == PS_TAX_EXC) {
-                $cart_rule['price'] = Tools::displayPrice($cart_rule['value_tax_exc']);
-                $cart_rule['price_float'] = $cart_rule['value_tax_exc'];
-            } else {
-                $cart_rule['price'] = Tools::displayPrice($cart_rule['value_real']);
-                $cart_rule['price_float'] = $cart_rule['value_real'];
-            }
-
         }
 
         $total_free_shipping = 0;
@@ -195,7 +146,7 @@ class blockcart extends Module
             1
         );
 
-        $response = array(
+        $this->smarty->assign(array(
             'products' => $products,
             'customizedDatas' => Product::getAllCustomizedDatas((int) ($params['cart']->id)),
             'CUSTOMIZE_FILE' => Product::CUSTOMIZE_FILE,
@@ -205,40 +156,26 @@ class blockcart extends Module
             'shipping_cost' => $shipping_cost,
             'shipping_cost_float' => $shipping_cost_float,
             'show_wrapping' => $wrappingCost > 0 ? true : false,
-            'show_tax' => $showTax,
-            'tax_cost' => $tax_cost,
+            'show_tax' => (int) (Configuration::get('PS_TAX_DISPLAY') == 1 && (int) Configuration::get('PS_TAX')),
             'wrapping_cost' => Tools::displayPrice($wrappingCost, $currency),
             'product_total' => Tools::displayPrice($params['cart']->getOrderTotal($useTax, Cart::ONLY_PRODUCTS), $currency),
             'totalToPay' => $totalToPay,
             'total_extra_demands' => $totalDemandsPrice,
             'total_extra_demands_format' => Tools::displayPrice($totalDemandsPrice, $currency),
             'total' => Tools::displayPrice($totalToPay, $currency),
-            'order_process' => $orderProcess,
+            'order_process' => Configuration::get('PS_ORDER_PROCESS_TYPE') ? 'order-opc' : 'order',
             'ajax_allowed' => (int) (Configuration::get('PS_BLOCK_CART_AJAX')) == 1 ? true : false,
             'static_token' => Tools::getToken(false),
-            'free_shipping' => Tools::displayPrice($total_free_shipping),
-            'free_shipping_float' => $total_free_shipping,
-
-            'cart_booking_data' => $htlCartData,
+            'free_shipping' => $total_free_shipping,
+            'cart_htl_data' => $htlCartData,
             'total_rooms_in_cart' => $totalRooms,
-        );
-
-        if (isset($params['cookie']->avail_rooms)) {
-            $response['avail_rooms'] = $params['cookie']->avail_rooms;
-            unset($this->context->cookie->avail_rooms);
-        }
-
-        $response['hasError'] = false;
+        ));
         if (is_array($errors) && count($errors)) {
-            $response['hasError'] = true;
-            $response['errors'] = $errors;
+            $this->smarty->assign('errors', $errors);
         }
-
         if (isset($this->context->cookie->ajax_blockcart_display)) {
-            $response['colapseExpandStatus'] =  $this->context->cookie->ajax_blockcart_display;
+            $this->smarty->assign('colapseExpandStatus', $this->context->cookie->ajax_blockcart_display);
         }
-
-        return $response;
     }
 
     public function getContent()
@@ -286,14 +223,23 @@ class blockcart extends Module
             return;
         }
 
-        $res = $this->getContentVars($params);
+        $this->assignContentVars($params);
+        $res = Tools::jsonDecode($this->display(__FILE__, 'blockcart-json.tpl'), true);
+
+        if (isset($params['cookie']->avail_rooms)) {
+            $res['avail_rooms'] = $params['cookie']->avail_rooms;
+            unset($this->context->cookie->avail_rooms);
+        }
+
 
         if (is_array($res) && ($id_product = Tools::getValue('id_product')) && Configuration::get('PS_BLOCK_CART_SHOW_CROSSSELLING')) {
             $this->smarty->assign('orderProducts', OrderDetail::getCrossSells($id_product, $this->context->language->id, Configuration::get('PS_BLOCK_CART_XSELL_LIMIT')));
             $res['crossSelling'] = $this->display(__FILE__, 'crossselling.tpl');
         }
 
-        return json_encode($res);
+        $res = Tools::jsonEncode($res);
+
+        return $res;
     }
 
     public function hookActionCartListOverride($params)
@@ -302,8 +248,8 @@ class blockcart extends Module
             return;
         }
 
-        $res = $this->getContentVars(array('cookie' => $this->context->cookie, 'cart' => $this->context->cart));
-        $params['json'] = json_encode($res);
+        $this->assignContentVars(array('cookie' => $this->context->cookie, 'cart' => $this->context->cart));
+        $params['json'] = $this->display(__FILE__, 'blockcart-json.tpl');
     }
 
     public function hookHeader()
@@ -358,9 +304,7 @@ class blockcart extends Module
             'order_page' => (strpos($_SERVER['PHP_SELF'], 'order') !== false),
             'blockcart_top' => (isset($params['blockcart_top']) && $params['blockcart_top']) ? true : false,
         ));
-        $res = $this->getContentVars($params);
-
-        $this->context->smarty->assign($res);
+        $this->assignContentVars($params);
 
         return $this->display(__FILE__, 'blockcart.tpl');
     }

@@ -50,7 +50,7 @@ class BlockcartCheckRoomAvailabilityAjaxProcessModuleFrontController extends Mod
                         }
                     }
                     die(
-                        json_encode(
+                        Tools::jsonEncode(
                             array(
                                 'status'=>'success',
                                 'msg'=>'successfully cart product updated.',
@@ -60,7 +60,7 @@ class BlockcartCheckRoomAvailabilityAjaxProcessModuleFrontController extends Mod
                     );
                 }
                 die(
-                    json_encode(
+                    Tools::jsonEncode(
                         array('status'=>'failed', 'msg'=>'error while deleting room from cart booking table.')
                     )
                 );

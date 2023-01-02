@@ -552,7 +552,7 @@ class AdminModulesPositionsControllerCore extends AdminController
                 }
             }
             $hookableList['hasError'] = false;
-            die(json_encode($hookableList));
+            die(Tools::jsonEncode($hookableList));
         }
     }
 
@@ -582,7 +582,7 @@ class AdminModulesPositionsControllerCore extends AdminController
                     }
                 }
             }
-            die(json_encode($hookableModulesList));
+            die(Tools::jsonEncode($hookableModulesList));
         }
     }
     public function ajaxProcessSaveHook()

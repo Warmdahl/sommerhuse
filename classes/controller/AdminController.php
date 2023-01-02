@@ -239,9 +239,6 @@ class AdminControllerCore extends Controller
     /** @var HelperList */
     protected $helper;
 
-    /** @var bool */
-    protected static $is_qloapps_up = true;
-
     /**
      * Actions to execute on multiple selections.
      *
@@ -1579,14 +1576,6 @@ class AdminControllerCore extends Controller
 
         $this->context->smarty->assign('help_link', 'http://help.prestashop.com/'.Language::getIsoById($this->context->employee->id_lang).'/doc/'
             .Tools::getValue('controller').'?version='._PS_VERSION_.'&country='.Language::getIsoById($this->context->employee->id_lang));
-
-        $this->context->smarty->assign(array(
-            'show_page_header_toolbar' => $this->show_page_header_toolbar,
-            'page_header_toolbar_title' => $this->page_header_toolbar_title,
-            'title' => $this->page_header_toolbar_title,
-            'toolbar_btn' => $this->page_header_toolbar_btn,
-            'page_header_toolbar_btn' => $this->page_header_toolbar_btn,
-        ));
     }
 
     /**
@@ -1814,14 +1803,14 @@ class AdminControllerCore extends Controller
         }
 
         if ($conf = Tools::getValue('conf')) {
-            $this->context->smarty->assign('conf', $this->json ? json_encode($this->_conf[(int)$conf]) : $this->_conf[(int)$conf]);
+            $this->context->smarty->assign('conf', $this->json ? Tools::jsonEncode($this->_conf[(int)$conf]) : $this->_conf[(int)$conf]);
         }
 
         foreach (array('errors', 'warnings', 'informations', 'confirmations') as $type) {
             if (!is_array($this->$type)) {
                 $this->$type = (array)$this->$type;
             }
-            $this->context->smarty->assign($type, $this->json ? json_encode(array_unique($this->$type)) : array_unique($this->$type));
+            $this->context->smarty->assign($type, $this->json ? Tools::jsonEncode(array_unique($this->$type)) : array_unique($this->$type));
         }
 
         if ($this->show_page_header_toolbar && !$this->lite_display) {
@@ -1835,7 +1824,7 @@ class AdminControllerCore extends Controller
 
         $this->context->smarty->assign(
             array(
-                'page' =>  $this->json ? json_encode($page) : $page,
+                'page' =>  $this->json ? Tools::jsonEncode($page) : $page,
                 'header' => $this->context->smarty->fetch($header_tpl),
                 'footer' => $this->context->smarty->fetch($footer_tpl),
             )
@@ -2120,6 +2109,11 @@ class AdminControllerCore extends Controller
             'content' => $this->content,
             'lite_display' => $this->lite_display,
             'url_post' => self::$currentIndex.'&token='.$this->token,
+            'show_page_header_toolbar' => $this->show_page_header_toolbar,
+            'page_header_toolbar_title' => $this->page_header_toolbar_title,
+            'title' => $this->page_header_toolbar_title,
+            'toolbar_btn' => $this->page_header_toolbar_btn,
+            'page_header_toolbar_btn' => $this->page_header_toolbar_btn
         ));
     }
 
@@ -2132,7 +2126,7 @@ class AdminControllerCore extends Controller
             @file_put_contents(_PS_ROOT_DIR_.Module::CACHE_FILE_MUST_HAVE_MODULES_LIST, Tools::addonsRequest('must-have'));
         }
         if (!$this->isFresh(Module::CACHE_FILE_TAB_MODULES_LIST, 604800)) {
-            $this->refresh(Module::CACHE_FILE_TAB_MODULES_LIST, _QLO_TAB_MODULE_LIST_URL_);
+            $this->refresh(Module::CACHE_FILE_TAB_MODULES_LIST, _PS_TAB_MODULE_LIST_URL_);
         }
 
         $this->tab_modules_list = Tab::getTabModulesList($this->id);
@@ -2246,20 +2240,6 @@ class AdminControllerCore extends Controller
     public function initCursedPage()
     {
         $this->layout = 'invalid_token.tpl';
-    }
-
-    public function setAccessDeniedPageVars()
-    {
-        $breadcrumbs2 = array(
-            'container' => array('name' => $this->l('Access denied'), 'href' => '#'),
-            'tab' => array('name' => '', 'href' => ''),
-        );
-        $this->show_page_header_toolbar = true;
-        $this->context->smarty->assign(array(
-            'title' => $this->l('Access denied'),
-            'toolbar_btn' => array(),
-            'breadcrumbs2' => $breadcrumbs2,
-        ));
     }
 
     /**
@@ -4062,6 +4042,9 @@ class AdminControllerCore extends Controller
         return false;
     }
 
+    /** @var bool */
+    protected static $is_prestashop_up = true;
+
     /**
      * @param string $file_to_refresh
      * @param string $external_file
@@ -4069,10 +4052,10 @@ class AdminControllerCore extends Controller
      */
     public function refresh($file_to_refresh, $external_file)
     {
-        if (self::$is_qloapps_up && $content = Tools::file_get_contents($external_file)) {
+        if (self::$is_prestashop_up && $content = Tools::file_get_contents($external_file)) {
             return (bool)file_put_contents(_PS_ROOT_DIR_.$file_to_refresh, $content);
         }
-        self::$is_qloapps_up = false;
+        self::$is_prestashop_up = false;
         return false;
     }
 

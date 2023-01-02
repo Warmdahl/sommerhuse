@@ -121,7 +121,7 @@
                                     col-sm-3
                                 {/if}">
                                     <button type="submit" class="btn btn-default button button-medium exclusive" name="search_room_submit" id="search_room_submit">
-                                        <span>{l s='Search Now' mod='wkroomsearchblock'}</span>
+                                        <span>{l s='Søg' mod='wkroomsearchblock'}</span>
                                     </button>
                                 </div>
                             </form>

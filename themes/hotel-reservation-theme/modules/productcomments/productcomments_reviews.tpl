@@ -23,7 +23,7 @@
 *  @license    http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
-{if isset($nbComments) && $nbComments > 0}
+{if isset($nbComments) && $nbComments > 1000}
 	<div class="comments_note" itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating">
 		<div class="star_content clearfix">
 			{section name="i" start=0 loop=5 step=1}

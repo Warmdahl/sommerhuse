@@ -35,12 +35,11 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: LimitBuilder.php 830 2013-12-18 09:35:42Z phosco@gmx.de $
  * 
  */
 
-namespace PHPSQLParser\builders;
-use PHPSQLParser\exceptions\UnableToCreateSQLException;
+require_once dirname(__FILE__) . '/../exceptions/UnableToCreateSQLException.php';
 
 /**
  * This class implements the builder LIMIT statement. 
@@ -50,10 +49,10 @@ use PHPSQLParser\exceptions\UnableToCreateSQLException;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class LimitBuilder implements Builder {
+class LimitBuilder {
 
-    public function build(array $parsed) {
-        $sql = ($parsed['rowcount']) . ($parsed['offset'] ? " OFFSET " . $parsed['offset'] : "");
+    public function build($parsed) {
+        $sql = ($parsed['offset'] ? $parsed['offset'] . ", " : "") . $parsed['rowcount'];
         if ($sql === "") {
             throw new UnableToCreateSQLException('LIMIT', 'rowcount', $parsed, 'rowcount');
         }

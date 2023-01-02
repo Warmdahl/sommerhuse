@@ -188,9 +188,6 @@ abstract class ControllerCore
             if ($this->viewAccess()) {
                 $this->initContent();
             } else {
-                if (method_exists($this, 'setAccessDeniedPageVars')) {
-                    $this->setAccessDeniedPageVars();
-                }
                 $this->errors[] = Tools::displayError('Access denied.');
             }
 

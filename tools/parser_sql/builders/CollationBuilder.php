@@ -35,13 +35,15 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: CollationBuilder.php 922 2014-01-08 12:19:35Z phosco@gmx.de $
  * 
  */
 
-namespace PHPSQLParser\builders;
-use PHPSQLParser\exceptions\UnableToCreateSQLException;
-use PHPSQLParser\utils\ExpressionType;
+require_once dirname(__FILE__) . '/../utils/ExpressionType.php';
+require_once dirname(__FILE__) . '/../exceptions/UnableToCreateSQLException.php';
+require_once dirname(__FILE__) . '/ConstantBuilder.php';
+require_once dirname(__FILE__) . '/OperatorBuilder.php';
+require_once dirname(__FILE__) . '/ReservedBuilder.php';
 
 /**
  * This class implements the builder for the collation statement part of CREATE TABLE. 
@@ -51,7 +53,7 @@ use PHPSQLParser\utils\ExpressionType;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class CollationBuilder implements Builder {
+class CollationBuilder {
 
     protected function buildOperator($parsed) {
         $builder = new OperatorBuilder();
@@ -68,7 +70,7 @@ class CollationBuilder implements Builder {
         return $builder->build($parsed);
     }
 
-    public function build(array $parsed) {
+    public function build($parsed) {
         if ($parsed['expr_type'] !== ExpressionType::COLLATE) {
             return "";
         }

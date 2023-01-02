@@ -35,11 +35,11 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: CreateTableDefinitionBuilder.php 830 2013-12-18 09:35:42Z phosco@gmx.de $
  * 
  */
 
-namespace PHPSQLParser\builders;
+require_once dirname(__FILE__) . '/TableBracketExpressionBuilder.php';
 
 /**
  * This class implements the builder for the create definitions of CREATE TABLE. 
@@ -49,14 +49,14 @@ namespace PHPSQLParser\builders;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class CreateTableDefinitionBuilder implements Builder {
+class CreateTableDefinitionBuilder {
 
     protected function buildTableBracketExpression($parsed) {
         $builder = new TableBracketExpressionBuilder();
         return $builder->build($parsed);
     }
 
-    public function build(array $parsed) {
+    public function build($parsed) {
         if (!isset($parsed) || $parsed['create-def'] === false) {
             return "";
         }

@@ -207,11 +207,10 @@ class AdminProductsControllerCore extends AdminController
 				LEFT JOIN `'._DB_PREFIX_.'shop` shop ON (shop.id_shop = '.$id_shop.')
 				LEFT JOIN `'._DB_PREFIX_.'image_shop` image_shop ON (image_shop.`id_product` = a.`id_product` AND image_shop.`cover` = 1 AND image_shop.id_shop = '.$id_shop.')
 				LEFT JOIN `'._DB_PREFIX_.'image` i ON (i.`id_image` = image_shop.`id_image`)
-                LEFT JOIN `'._DB_PREFIX_.'product_download` pd ON (pd.`id_product` = a.`id_product` AND pd.`active` = 1)
-				LEFT JOIN `'._DB_PREFIX_.'address` aa ON (aa.`id_hotel` = hb.`id`)';
+				LEFT JOIN `'._DB_PREFIX_.'product_download` pd ON (pd.`id_product` = a.`id_product` AND pd.`active` = 1)';
 
         $this->_select .= ' (SELECT COUNT(hri.`id`) FROM `'._DB_PREFIX_.'htl_room_information` hri WHERE hri.`id_product` = a.`id_product`) as num_rooms, ';
-        $this->_select .= 'hrt.`adult`, hrt.`children`, hb.`id` as id_hotel, aa.`city`, hbl.`hotel_name`, ';
+        $this->_select .= 'hrt.`adult`, hrt.`children`, hb.`id` as id_hotel, hb.`city`, hbl.`hotel_name`, ';
         $this->_select .= 'shop.`name` AS `shopname`, a.`id_shop_default`, ';
         $this->_select .= $alias_image.'.`id_image` AS `id_image`, cl.`name` AS `name_category`, '.$alias.'.`price`, 0 AS `price_final`, a.`is_virtual`, pd.`nb_downloadable`, sav.`quantity` AS `sav_quantity`, '.$alias.'.`active`, IF(sav.`quantity`<=0, 1, 0) AS `badge_danger`';
 
@@ -601,7 +600,7 @@ class AdminProductsControllerCore extends AdminController
     public function ajaxProcessAddAttachment()
     {
         if ($this->tabAccess['edit'] === '0') {
-            return die(json_encode(array('error' => $this->l('You do not have the right permission'))));
+            return die(Tools::jsonEncode(array('error' => $this->l('You do not have the right permission'))));
         }
         if (isset($_FILES['attachment_file'])) {
             if ((int)$_FILES['attachment_file']['error'] === 1) {
@@ -721,9 +720,10 @@ class AdminProductsControllerCore extends AdminController
                 }
             }
 
-            die(json_encode($_FILES));
+            die(Tools::jsonEncode($_FILES));
         }
     }
+
 
     /**
      * Attach an existing attachment to the product
@@ -758,63 +758,17 @@ class AdminProductsControllerCore extends AdminController
             unset($product->id_product);
             $product->indexed = 0;
             $product->active = 0;
-
-            // suffix 'Duplicate' if same hotel
-            $id_hotel_new = Tools::getValue('id_hotel');
-            $obj_hotel_room_type = new HotelRoomType();
-            $room_type_info = $obj_hotel_room_type->getRoomTypeInfoByIdProduct($id_product_old);
-            if ($room_type_info && $room_type_info['id_hotel'] == $id_hotel_new) {
-                foreach (Language::getLanguages(true) as $language) {
-                    $product->name[$language['id_lang']] = $product->name[$language['id_lang']].
-                    ' - '.$this->l('Duplicate');
-                }
-            }
-
-            // update lang fields
-            foreach (Language::getLanguages(true) as $language) {
-                $product->link_rewrite[$language['id_lang']] = Tools::str2url($product->name[$language['id_lang']]);
-            }
             if ($product->add()
-                // && Category::duplicateProductCategories($id_product_old, $product->id)
-                && Product::duplicateSuppliers($id_product_old, $product->id)
-                && ($combination_images = Product::duplicateAttributes($id_product_old, $product->id)) !== false
-                && GroupReduction::duplicateReduction($id_product_old, $product->id)
-                && Product::duplicateAccessories($id_product_old, $product->id)
-                && Product::duplicateFeatures($id_product_old, $product->id)
-                && Pack::duplicate($id_product_old, $product->id)
-                && Product::duplicateCustomizationFields($id_product_old, $product->id)
-                && Product::duplicateTags($id_product_old, $product->id)
-                && Product::duplicateDownload($id_product_old, $product->id)
-            ) {
-                $obj_hotel_room_type = new HotelRoomType();
-                $room_type_info = $obj_hotel_room_type->getRoomTypeInfoByIdProduct($id_product_old);
-                $id_room_type_old = $room_type_info['id'];
-                if (!$id_hotel_new) {
-                    $id_hotel_new = $room_type_info['id_hotel'];
-                }
-                $id_room_type_new = HotelRoomType::duplicateRoomType(
-                    $id_product_old,
-                    $product->id,
-                    $id_hotel_new,
-                    true
-                );
-                if ($id_room_type_new) {
-                    if (!HotelRoomType::duplicateRooms(
-                        $id_product_old,
-                        $id_room_type_new,
-                        $product->id,
-                        $id_hotel_new
-                    )) {
-                        $this->errors[] = Tools::displayError('An error occurred while duplicating rooms.');
-                    }
-                    if (!HotelRoomTypeDemand::duplicateRoomTypeDemands($id_product_old, $product->id)) {
-                        $this->errors[] = Tools::displayError(
-                            'An error occurred while duplicating additional facilities.'
-                        );
-                    }
-                } else {
-                    $this->errors[] = Tools::displayError('An error occurred while duplicating room type.');
-                }
+            && Category::duplicateProductCategories($id_product_old, $product->id)
+            && Product::duplicateSuppliers($id_product_old, $product->id)
+            && ($combination_images = Product::duplicateAttributes($id_product_old, $product->id)) !== false
+            && GroupReduction::duplicateReduction($id_product_old, $product->id)
+            && Product::duplicateAccessories($id_product_old, $product->id)
+            && Product::duplicateFeatures($id_product_old, $product->id)
+            && Pack::duplicate($id_product_old, $product->id)
+            && Product::duplicateCustomizationFields($id_product_old, $product->id)
+            && Product::duplicateTags($id_product_old, $product->id)
+            && Product::duplicateDownload($id_product_old, $product->id)) {
                 if ($product->hasAttributes()) {
                     Product::updateDefaultAttribute($product->id);
                 } else {
@@ -1272,7 +1226,7 @@ class AdminProductsControllerCore extends AdminController
         $id_group = Tools::getValue('sp_id_group');
         $id_customer = Tools::getValue('sp_id_customer');
         $price = Tools::getValue('leave_bprice') ? '-1' : Tools::getValue('sp_price');
-        $from_quantity = 1;
+        $from_quantity = Tools::getValue('sp_from_quantity');
         $reduction = (float)(Tools::getValue('sp_reduction'));
         $reduction_tax = Tools::getValue('sp_reduction_tax');
         $reduction_type = !$reduction ? 'amount' : Tools::getValue('sp_reduction_type');
@@ -1342,7 +1296,7 @@ class AdminProductsControllerCore extends AdminController
             );
         }
 
-        die(json_encode($json));
+        die(Tools::jsonEncode($json));
     }
 
     public function processSpecificPricePriorities()
@@ -1586,13 +1540,7 @@ class AdminProductsControllerCore extends AdminController
             parent::postProcess();
         }
 
-        $this->addJS(array(
-            _PS_JS_DIR_.'admin/products.js',
-        ));
-
-        if (in_array($this->display, array('add', 'edit'))
-            && $this->tabAccess[$this->display] == '1'
-        ) {
+        if ($this->display == 'edit' || $this->display == 'add') {
             $this->addJqueryUI(array(
                 'ui.core',
                 'ui.widget'
@@ -1610,6 +1558,7 @@ class AdminProductsControllerCore extends AdminController
             ));
 
             $this->addJS(array(
+                _PS_JS_DIR_.'admin/products.js',
                 _PS_JS_DIR_.'admin/attributes.js',
                 _PS_JS_DIR_.'admin/price.js',
                 _PS_JS_DIR_.'tiny_mce/tiny_mce.js',
@@ -1683,7 +1632,7 @@ class AdminProductsControllerCore extends AdminController
             );
         }
 
-        die(json_encode($json));
+        die(Tools::jsonEncode($json));
     }
 
     public function ajaxProcessDefaultProductAttribute()
@@ -1707,7 +1656,7 @@ class AdminProductsControllerCore extends AdminController
                 );
             }
 
-            die(json_encode($json));
+            die(Tools::jsonEncode($json));
         }
     }
 
@@ -1722,7 +1671,7 @@ class AdminProductsControllerCore extends AdminController
                     $combinations[$key]['attributes'][] = array($combination['group_name'], $combination['attribute_name'], $combination['id_attribute']);
                 }
 
-                die(json_encode($combinations));
+                die(Tools::jsonEncode($combinations));
             }
         }
     }
@@ -1783,13 +1732,13 @@ class AdminProductsControllerCore extends AdminController
     public function ajaxProcessUpdateImagePosition()
     {
         if ($this->tabAccess['edit'] === '0') {
-            return die(json_encode(array('error' => $this->l('You do not have the right permission'))));
+            return die(Tools::jsonEncode(array('error' => $this->l('You do not have the right permission'))));
         }
         $res = false;
         if ($json = Tools::getValue('json')) {
             $res = true;
             $json = stripslashes($json);
-            $images = json_decode($json, true);
+            $images = Tools::jsonDecode($json, true);
             foreach ($images as $id => $position) {
                 $img = new Image((int)$id);
                 $img->position = (int)$position;
@@ -1806,7 +1755,7 @@ class AdminProductsControllerCore extends AdminController
     public function ajaxProcessUpdateCover()
     {
         if ($this->tabAccess['edit'] === '0') {
-            return die(json_encode(array('error' => $this->l('You do not have the right permission'))));
+            return die(Tools::jsonEncode(array('error' => $this->l('You do not have the right permission'))));
         }
         Image::deleteCover((int)Tools::getValue('id_product'));
         $img = new Image((int)Tools::getValue('id_image'));
@@ -2785,12 +2734,6 @@ class AdminProductsControllerCore extends AdminController
         return parent::renderList();
     }
 
-    public function displayDuplicateLink($token = null, $id, $name = null)
-    {
-        return '<a href="#" title="'.$this->l('Duplicate').'"
-        onclick="initDuplicateRoomType('.(int)$id.');return false;"><i class="icon-copy"></i>'.$this->l('Duplicate').'</a>';
-    }
-
     public function ajaxProcessProductManufacturers()
     {
         $manufacturers = Manufacturer::getManufacturers(false, 0, true, false, false, false, true);
@@ -2799,7 +2742,7 @@ class AdminProductsControllerCore extends AdminController
         if ($manufacturers) {
             foreach ($manufacturers as $manufacturer) {
                 $tmp = array("optionValue" => $manufacturer['id_manufacturer'], "optionDisplay" => htmlspecialchars(trim($manufacturer['name'])));
-                $jsonArray[] = json_encode($tmp);
+                $jsonArray[] = Tools::jsonEncode($tmp);
             }
         }
 
@@ -2900,7 +2843,10 @@ class AdminProductsControllerCore extends AdminController
                     );
                 }
 
-                $js = 'initDuplicateRoomType('.(int)$product->id.');return false;';
+                $js = (bool)Image::getImages($this->context->language->id, (int)$product->id) ?
+                    'confirm_link(\'\', \''.$this->l('This will copy the images too. If you wish to proceed, click "Yes". If not, click "No".', null, true, false).'\', \''.$this->l('Yes', null, true, false).'\', \''.$this->l('No', null, true, false).'\', \''.$this->context->link->getAdminLink('AdminProducts', true).'&id_product='.(int)$product->id.'&duplicateproduct'.'\', \''.$this->context->link->getAdminLink('AdminProducts', true).'&id_product='.(int)$product->id.'&duplicateproduct&noimage=1'.'\')'
+                    :
+                    'document.location = \''.$this->context->link->getAdminLink('AdminProducts', true).'&id_product='.(int)$product->id.'&duplicateproduct&noimage=1'.'\'';
 
                 // adding button for duplicate this product
                 if ($this->tabAccess['add']) {
@@ -2934,12 +2880,6 @@ class AdminProductsControllerCore extends AdminController
             }
         }
         parent::initPageHeaderToolbar();
-    }
-
-    public function initModal()
-    {
-        parent::initModal();
-        $this->modals[] = $this->getModalDuplicateOptions();
     }
 
     public function initToolbar()
@@ -2985,9 +2925,7 @@ class AdminProductsControllerCore extends AdminController
     public function renderForm()
     {
         // This nice code (irony) is here to store the product name, because the row after will erase product name in multishop context
-        if (Validate::isLoadedObject(($this->object))) {
-            $this->product_name = $this->object->name[$this->context->language->id];
-        }
+        $this->product_name = $this->object->name[$this->context->language->id];
 
         if (!method_exists($this, 'initForm'.$this->tab_display)) {
             return;
@@ -3027,7 +2965,7 @@ class AdminProductsControllerCore extends AdminController
         $this->tpl_form_vars['token'] = $this->token;
         $this->tpl_form_vars['combinationImagesJs'] = $this->getCombinationImagesJs();
         $this->tpl_form_vars['PS_ALLOW_ACCENTED_CHARS_URL'] = (int)Configuration::get('PS_ALLOW_ACCENTED_CHARS_URL');
-        $this->tpl_form_vars['post_data'] = json_encode($_POST);
+        $this->tpl_form_vars['post_data'] = Tools::jsonEncode($_POST);
         $this->tpl_form_vars['save_error'] = !empty($this->errors);
         $this->tpl_form_vars['mod_evasive'] = Tools::apacheModExists('evasive');
         $this->tpl_form_vars['mod_security'] = Tools::apacheModExists('security');
@@ -3384,8 +3322,8 @@ class AdminProductsControllerCore extends AdminController
                 $objHotelInfo = new HotelBranchInformation();
                 $hotelInfo = $objHotelInfo->hotelsNameAndId();
                 if ($hotelInfo) {
-                    $objRoomInfo = new HotelRoomInformation();
-                    $roomStatus = $objRoomInfo->getAllRoomStatus();
+                    $objRoomStatus = new HotelRoomStatus();
+                    $roomStatus = $objRoomStatus->getAllRoomStatus();
 
                     $objRoomType = new HotelRoomType();
                     if ($hotelRoomType = $objRoomType->getRoomTypeInfoByIdProduct($obj->id)) {
@@ -3394,13 +3332,14 @@ class AdminProductsControllerCore extends AdminController
                         $hotelFullInfo = $objHotelInfo->hotelBranchInfoById($hotelRoomType['id_hotel']);
                         $data->assign('htl_full_info', $hotelFullInfo);
 
+                        $objRoomInfo = new HotelRoomInformation();
                         $objRoomDisableDates = new HotelRoomDisableDates();
                         $hotelRoomInfo = $objRoomInfo->getHotelRoomInfo($obj->id, $hotelRoomType['id_hotel']);
                         if ($hotelRoomInfo) {
                             foreach ($hotelRoomInfo as &$room) {
-                                if ($room['id_status'] == HotelRoomInformation::STATUS_TEMPORARY_INACTIVE) {
+                                if ($room['id_status'] == 3) {
                                     $disabledDates = $objRoomDisableDates->getRoomDisableDates($room['id']);
-                                    $room['disabled_dates_json'] = json_encode($disabledDates);
+                                    $room['disabled_dates_json'] = Tools::jsonEncode($disabledDates);
                                 }
                             }
                             $data->assign('htl_room_info', $hotelRoomInfo);
@@ -3552,8 +3491,8 @@ class AdminProductsControllerCore extends AdminController
                         //validate room status
                         $disableDtsArr = array();
                         foreach ($room_status as $key => $status) {
-                            if ($status == HotelRoomInformation::STATUS_TEMPORARY_INACTIVE) {
-                                $disableDtsArr[$key] = json_decode($disable_dates[$key], true);
+                            if ($status == 3) {
+                                $disableDtsArr[$key] = Tools::jsonDecode($disable_dates[$key], true);
                                 $this->validateDisableDateRanges($disableDtsArr[$key]);
                             }
                         }
@@ -3588,7 +3527,7 @@ class AdminProductsControllerCore extends AdminController
                                 $objRoomInfo->floor = $room_floor[$key];
                                 $objRoomInfo->comment = $room_comment[$key];
                                 if ($objRoomInfo->save()) {
-                                    if ($room_status[$key] == HotelRoomInformation::STATUS_TEMPORARY_INACTIVE) {
+                                    if ($room_status[$key] == 3) {
                                         $objDisDts = new HotelRoomDisableDates();
                                         $objDisDts->deleteRoomDisableDates($objRoomInfo->id);
                                         if (isset($disableDtsArr[$key]) && $disableDtsArr[$key]) {
@@ -3775,7 +3714,7 @@ class AdminProductsControllerCore extends AdminController
         }
 
         if ($booking_calendar_data) {
-            die(json_encode($booking_calendar_data));
+            die(Tools::jsonEncode($booking_calendar_data));
         } else {
             die(0);
         }
@@ -3916,9 +3855,6 @@ class AdminProductsControllerCore extends AdminController
                 'link' => new Link(),
                 'pack' => new Pack()
             ));
-
-            // get hotel address for this room type
-            $address_infos = Address::getCountryAndState(Cart::getIdAddressForTaxCalculation($obj->id));
         } else {
             $this->displayWarning($this->l('You must save this room type before adding specific pricing'));
             $product->id_tax_rules_group = (int)Product::getIdTaxRulesGroupMostUsed();
@@ -3926,14 +3862,7 @@ class AdminProductsControllerCore extends AdminController
         }
 
         $address = new Address();
-        // $address->id_country = (int)$this->context->country->id;
-        if (!$address_infos) {
-            $address->id_country = (int)$this->context->country->id;
-        } else {
-            $address->id_country = (int)$address_infos['id_country'];
-            $address->id_state = (int)$address_infos['id_state'];
-            $address->zipcode = $address_infos['postcode'];
-        }
+        $address->id_country = (int)$this->context->country->id;
         $tax_rules_groups = TaxRulesGroup::getTaxRulesGroups(true);
         $tax_rates = array(
             0 => array(
@@ -4308,6 +4237,7 @@ class AdminProductsControllerCore extends AdminController
 						<td>'.$fixed_price.'</td>
 						<td>'.$impact.'</td>
 						<td>'.$period.'</td>
+						<td>'.$specific_price['from_quantity'].'</th>
 						<td>'.((!$rule->id && $can_delete_specific_prices) ? '<a class="btn btn-default" name="delete_link" href="'.self::$currentIndex.'&id_product='.(int)Tools::getValue('id_product').'&action=deleteSpecificPrice&id_specific_price='.(int)($specific_price['id_specific_price']).'&token='.Tools::getValue('token').'"><i class="icon-trash"></i></a>': '').'</td>
 					</tr>';
                     $i++;
@@ -4678,16 +4608,7 @@ class AdminProductsControllerCore extends AdminController
 
         $objRoomType = new HotelRoomType();
         $objHotelInfo = new HotelBranchInformation();
-        $idsHotel = $objHotelInfo->getProfileAccessedHotels($this->context->employee->id_profile, 1, 1);
-        $hotelsInfo = array();
-        foreach ($idsHotel as $idHotel) {
-            $objHotelBranchInfo = new HotelBranchInformation($idHotel, $this->context->language->id);
-            $hotelsInfo[] = array(
-                'id' => (int)$idHotel,
-                'hotel_name' => $objHotelBranchInfo->hotel_name,
-            );
-        }
-        $data->assign('htl_info', $hotelsInfo);
+        $data->assign('htl_info', $objHotelInfo->hotelsNameAndId());
         if ($hotelRoomType = $objRoomType->getRoomTypeInfoByIdProduct($product->id)) {
             $data->assign('htl_room_type', $hotelRoomType);
             $hotelFullInfo = $objHotelInfo->hotelBranchInfoById($hotelRoomType['id_hotel']);
@@ -4872,7 +4793,7 @@ class AdminProductsControllerCore extends AdminController
             }
         }
 
-        die(json_encode(array($image_uploader->getName() => $files)));
+        die(Tools::jsonEncode(array($image_uploader->getName() => $files)));
     }
 
     /**
@@ -5497,76 +5418,31 @@ class AdminProductsControllerCore extends AdminController
         $this->tpl_form_vars['custom_form'] = $data->fetch();
     }
 
-    public function getModalDuplicateOptions()
-    {
-        $tpl = $this->createTemplate('modal-duplicate-options.tpl');
-        $idsHotel = HotelBranchInformation::getProfileAccessedHotels($this->context->employee->id_profile, 1, 1);
-        $hotelsInfo = array();
-        foreach ($idsHotel as $idHotel) {
-            $objHotelBranchInfo = new HotelBranchInformation($idHotel, $this->context->language->id);
-            if (Validate::isLoadedObject($objHotelBranchInfo)) {
-                $hotelAddressInfo = $objHotelBranchInfo->getAddress($idHotel);
-                $hotelInfo = array(
-                    'id_hotel' => $objHotelBranchInfo->id,
-                    'hotel_name' => $objHotelBranchInfo->hotel_name,
-                    'rating' => $objHotelBranchInfo->rating,
-                    'city' => $hotelAddressInfo['city'],
-                );
-                $hotelsInfo[] = $hotelInfo;
-            }
-        }
-        $formAction = $this->context->link->getAdminLink('AdminProducts', true).'&duplicateproduct';
-        $tpl->assign(array(
-            'action' => $formAction,
-            'hotels_info' => $hotelsInfo,
-            'duplicate_images' => 1,
-        ));
-
-        $modalActions = array(
-            array(
-                'type' => 'button',
-                'value' => 'submitDuplicate',
-                'class' => 'btn-primary submit-duplicate',
-                'label' => $this->l('Submit'),
-            ),
-        );
-
-        // set modal options
-        $modal = array(
-            'modal_id' => 'modal-duplicate-options',
-            'modal_class' => 'modal-md',
-            'modal_title' => $this->l('Duplication options'),
-            'modal_content' => $tpl->fetch(),
-            'modal_actions' => $modalActions,
-        );
-        return $modal;
-    }
-
     public function ajaxProcessProductQuantity()
     {
         if ($this->tabAccess['edit'] === '0') {
-            return die(json_encode(array('error' => $this->l('You do not have the right permission'))));
+            return die(Tools::jsonEncode(array('error' => $this->l('You do not have the right permission'))));
         }
         if (!Tools::getValue('actionQty')) {
-            return json_encode(array('error' => $this->l('Undefined action')));
+            return Tools::jsonEncode(array('error' => $this->l('Undefined action')));
         }
 
         $product = new Product((int)Tools::getValue('id_product'), true);
         switch (Tools::getValue('actionQty')) {
             case 'depends_on_stock':
                 if (Tools::getValue('value') === false) {
-                    die(json_encode(array('error' =>  $this->l('Undefined value'))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Undefined value'))));
                 }
                 if ((int)Tools::getValue('value') != 0 && (int)Tools::getValue('value') != 1) {
-                    die(json_encode(array('error' =>  $this->l('Incorrect value'))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Incorrect value'))));
                 }
                 if (!$product->advanced_stock_management && (int)Tools::getValue('value') == 1) {
-                    die(json_encode(array('error' =>  $this->l('Not possible if advanced stock management is disabled. '))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Not possible if advanced stock management is disabled. '))));
                 }
                 if (Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT') && (int)Tools::getValue('value') == 1 && (Pack::isPack($product->id) && !Pack::allUsesAdvancedStockManagement($product->id)
                     && ($product->pack_stock_type == 2 || $product->pack_stock_type == 1 ||
                         ($product->pack_stock_type == 3 && (Configuration::get('PS_PACK_STOCK_TYPE') == 1 || Configuration::get('PS_PACK_STOCK_TYPE') == 2))))) {
-                    die(json_encode(array('error' => $this->l('You cannot use advanced stock management for this pack because').'<br />'.
+                    die(Tools::jsonEncode(array('error' => $this->l('You cannot use advanced stock management for this pack because').'<br />'.
                         $this->l('- advanced stock management is not enabled for these room types').'<br />'.
                         $this->l('- you have chosen to decrement room types quantities.'))));
                 }
@@ -5577,15 +5453,15 @@ class AdminProductsControllerCore extends AdminController
             case 'pack_stock_type':
                 $value = Tools::getValue('value');
                 if ($value === false) {
-                    die(json_encode(array('error' =>  $this->l('Undefined value'))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Undefined value'))));
                 }
                 if ((int)$value != 0 && (int)$value != 1
                     && (int)$value != 2 && (int)$value != 3) {
-                    die(json_encode(array('error' =>  $this->l('Incorrect value'))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Incorrect value'))));
                 }
                 if ($product->depends_on_stock && !Pack::allUsesAdvancedStockManagement($product->id) && ((int)$value == 1
                     || (int)$value == 2 || ((int)$value == 3 && (Configuration::get('PS_PACK_STOCK_TYPE') == 1 || Configuration::get('PS_PACK_STOCK_TYPE') == 2)))) {
-                    die(json_encode(array('error' => $this->l('You cannot use this stock management option because:').'<br />'.
+                    die(Tools::jsonEncode(array('error' => $this->l('You cannot use this stock management option because:').'<br />'.
                         $this->l('- advanced stock management is not enabled for these room types').'<br />'.
                         $this->l('- advanced stock management is enabled for the pack'))));
                 }
@@ -5595,10 +5471,10 @@ class AdminProductsControllerCore extends AdminController
 
             case 'out_of_stock':
                 if (Tools::getValue('value') === false) {
-                    die(json_encode(array('error' =>  $this->l('Undefined value'))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Undefined value'))));
                 }
                 if (!in_array((int)Tools::getValue('value'), array(0, 1, 2))) {
-                    die(json_encode(array('error' =>  $this->l('Incorrect value'))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Incorrect value'))));
                 }
 
                 StockAvailable::setProductOutOfStock($product->id, (int)Tools::getValue('value'));
@@ -5606,10 +5482,10 @@ class AdminProductsControllerCore extends AdminController
 
             case 'set_qty':
                 if (Tools::getValue('value') === false || (!is_numeric(trim(Tools::getValue('value'))))) {
-                    die(json_encode(array('error' =>  $this->l('Undefined value'))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Undefined value'))));
                 }
                 if (Tools::getValue('id_product_attribute') === false) {
-                    die(json_encode(array('error' =>  $this->l('Undefined id room type attribute'))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Undefined id room type attribute'))));
                 }
 
                 StockAvailable::setQuantity($product->id, (int)Tools::getValue('id_product_attribute'), (int)Tools::getValue('value'));
@@ -5619,18 +5495,18 @@ class AdminProductsControllerCore extends AdminController
                 $error = ob_get_contents();
                 if (!empty($error)) {
                     ob_end_clean();
-                    die(json_encode(array('error' => $error)));
+                    die(Tools::jsonEncode(array('error' => $error)));
                 }
                 break;
             case 'advanced_stock_management' :
                 if (Tools::getValue('value') === false) {
-                    die(json_encode(array('error' =>  $this->l('Undefined value'))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Undefined value'))));
                 }
                 if ((int)Tools::getValue('value') != 1 && (int)Tools::getValue('value') != 0) {
-                    die(json_encode(array('error' =>  $this->l('Incorrect value'))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Incorrect value'))));
                 }
                 if (!Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT') && (int)Tools::getValue('value') == 1) {
-                    die(json_encode(array('error' =>  $this->l('Not possible if advanced stock management is disabled. '))));
+                    die(Tools::jsonEncode(array('error' =>  $this->l('Not possible if advanced stock management is disabled. '))));
                 }
 
                 $product->setAdvancedStockManagement((int)Tools::getValue('value'));
@@ -5640,7 +5516,7 @@ class AdminProductsControllerCore extends AdminController
                 break;
 
         }
-        die(json_encode(array('error' => false)));
+        die(Tools::jsonEncode(array('error' => false)));
     }
 
     public function getCombinationImagesJS()
@@ -5790,7 +5666,7 @@ class AdminProductsControllerCore extends AdminController
 					GROUP BY pl.`id_product`
 					LIMIT '.(int)$limit);
             }
-            die(json_encode($result));
+            die(Tools::jsonEncode($result));
         }
     }
 
@@ -5858,19 +5734,6 @@ class AdminProductsControllerCore extends AdminController
                 }
             }
         }
-    }
-
-    public function ajaxProcessGetIdHotelByIdProduct()
-    {
-        $response = array('status' => 'failed');
-        $idProduct = Tools::getValue('id_product');
-        $objHotelRoomType = new HotelRoomType();
-        $roomTypeInfo = $objHotelRoomType->getRoomTypeInfoByIdProduct($idProduct);
-        if ($roomTypeInfo) {
-            $response['status'] = 'success';
-            $response['id_hotel'] = (int)$roomTypeInfo['id_hotel'];
-        }
-        die(json_encode($response));
     }
 
     public function processImageLegends()

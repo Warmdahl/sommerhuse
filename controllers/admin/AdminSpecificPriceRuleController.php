@@ -100,6 +100,11 @@ class AdminSpecificPriceRuleControllerCore extends AdminController
                 'align' => 'center',
                 'filter_key' => 'gl!name'
             ),
+            'from_quantity' => array(
+                'title' => $this->l('From quantity'),
+                'align' => 'center',
+                'class' => 'fixed-width-xs'
+            ),
             'reduction_type' => array(
                 'title' => $this->l('Reduction type'),
                 'align' => 'center',
@@ -218,6 +223,13 @@ class AdminSpecificPriceRuleControllerCore extends AdminController
                 ),
                 array(
                     'type' => 'text',
+                    'label' => $this->l('From quantity'),
+                    'name' => 'from_quantity',
+                    'maxlength' => 10,
+                    'required' => true,
+                ),
+                array(
+                    'type' => 'text',
                     'label' => $this->l('Price (tax excl.)'),
                     'name' => 'price',
                     'disabled' => ($this->object->price == -1 ? 1 : 0),
@@ -333,7 +345,6 @@ class AdminSpecificPriceRuleControllerCore extends AdminController
 
     public function processSave()
     {
-        $_POST['from_quantity'] = 1;
         $_POST['price'] = Tools::getValue('leave_bprice_on') ? '-1' : Tools::getValue('price');
         if (Validate::isLoadedObject(($object = parent::processSave()))) {
             /** @var SpecificPriceRule $object */

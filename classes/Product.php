@@ -488,8 +488,11 @@ class ProductCore extends ObjectModel
             $this->manufacturer_name = Manufacturer::getNameById((int)$this->id_manufacturer);
             $this->supplier_name = Supplier::getNameById((int)$this->id_supplier);
             $address = null;
-            $id_address = Cart::getIdAddressForTaxCalculation($this->id);
-            $this->tax_rate = $this->getTaxesRate(new Address($id_address));
+            if (is_object($context->cart) && $context->cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')} != null) {
+                $address = $context->cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')};
+            }
+
+            $this->tax_rate = $this->getTaxesRate(new Address($address));
 
             $this->new = $this->isNew();
 
@@ -2841,16 +2844,21 @@ class ProductCore extends ObjectModel
         $id_state = 0;
         $zipcode = 0;
 
-        if ($id_address) {
-            $address_infos = Address::getCountryAndState($id_address);
-        } else {
-            $address_infos = Address::getCountryAndState(Cart::getIdAddressForTaxCalculation($id_product));
+        if (!$id_address && Validate::isLoadedObject($cur_cart)) {
+            $id_address = $cur_cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')};
         }
 
-        if ($address_infos['id_country']) {
-            $id_country = (int)$address_infos['id_country'];
-            $id_state = (int)$address_infos['id_state'];
-            $zipcode = $address_infos['postcode'];
+        if ($id_address) {
+            $address_infos = Address::getCountryAndState($id_address);
+            if ($address_infos['id_country']) {
+                $id_country = (int)$address_infos['id_country'];
+                $id_state = (int)$address_infos['id_state'];
+                $zipcode = $address_infos['postcode'];
+            }
+        } elseif (isset($context->customer->geoloc_id_country)) {
+            $id_country = (int)$context->customer->geoloc_id_country;
+            $id_state = (int)$context->customer->id_state;
+            $zipcode = $context->customer->postcode;
         }
 
         if (Tax::excludeTaxeOption()) {
@@ -2957,7 +2965,7 @@ class ProductCore extends ObjectModel
             (int)$id_product,
             $id_shop,
             $id_currency,
-            (int)$context->country->id,
+            $id_country,
             $id_group,
             $quantity,
             $id_product_attribute,
@@ -3152,7 +3160,7 @@ class ProductCore extends ObjectModel
         $quantity = $cart_quantity ? $cart_quantity : $quantity;
 
         $id_currency = (int)$context->currency->id;
-        $ids = Address::getCountryAndState(cart::getIdAddressForTaxCalculation($id_product));
+        $ids = Address::getCountryAndState((int)$context->cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')});
         $id_country = $ids['id_country'] ? (int)$ids['id_country'] : (int)Configuration::get('PS_COUNTRY_DEFAULT');
         return (bool)SpecificPrice::getSpecificPrice((int)$id_product, $context->shop->id, $id_currency, $id_country, $id_group, $quantity, null, 0, 0, $quantity);
     }
@@ -3750,7 +3758,7 @@ class ProductCore extends ObjectModel
     * @param string $query Search query
     * @return array Matching products
     */
-    public static function searchByName($id_lang, $query, Context $context = null, $id_hotel = false)
+    public static function searchByName($id_lang, $query, Context $context = null)
     {
         if (!$context) {
             $context = Context::getContext();
@@ -3765,14 +3773,6 @@ class ProductCore extends ObjectModel
 			AND pl.`id_lang` = '.(int)$id_lang.Shop::addSqlRestrictionOnLang('pl')
         );
         $sql->leftJoin('manufacturer', 'm', 'm.`id_manufacturer` = p.`id_manufacturer`');
-        if ($id_hotel) {
-            $sql->innerJoin(
-                'htl_room_type',
-                'hrt',
-                'p.`id_product` = hrt.`id_product` AND hrt.`id_hotel` = '.(int)$id_hotel
-            );
-
-        }
 
         $where = 'pl.`name` LIKE \'%'.pSQL($query).'%\'
 		OR p.`ean13` LIKE \'%'.pSQL($query).'%\'
@@ -5048,7 +5048,7 @@ class ProductCore extends ObjectModel
     public function getTaxesRate(Address $address = null)
     {
         if (!$address || !$address->id_country) {
-            $address = Address::initialize(Cart::getIdAddressForTaxCalculation($this->id));
+            $address = Address::initialize();
         }
 
         $tax_manager = TaxManagerFactory::getManager($address, $this->id_tax_rules_group);
@@ -5776,7 +5776,7 @@ class ProductCore extends ObjectModel
             libxml_use_internal_errors(true);
             $xml = simplexml_load_string(utf8_decode($postData));
 
-            $roomtypeData = json_decode(json_encode($xml), true);
+            $roomtypeData = Tools::jsonDecode(Tools::jsonEncode($xml), true);
 
             // set room  map info for the hotel from request
             return Db::getInstance()->execute('INSERT INTO `'._DB_PREFIX_.'htl_room_type` (`id_product`, `id_hotel`, `adult`, `children`, `date_add`, `date_upd`) VALUES ('.(int)$this->id.', '.(int) $roomtypeData['room_type']['id_hotel'].', '.(int) $roomtypeData['room_type']['adults'].', '.(int) $roomtypeData['room_type']['children'].', \''.date('Y-m-d h:i:s').'\', \''.date('Y-m-d h:i:s').'\')');

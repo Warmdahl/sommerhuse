@@ -35,12 +35,12 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: ConstantBuilder.php 830 2013-12-18 09:35:42Z phosco@gmx.de $
  * 
  */
 
-namespace PHPSQLParser\builders;
-use PHPSQLParser\utils\ExpressionType;
+require_once dirname(__FILE__) . '/AliasBuilder.php';
+require_once dirname(__FILE__) . '/../utils/ExpressionType.php';
 
 /**
  * This class implements the builder for constants. 
@@ -50,14 +50,14 @@ use PHPSQLParser\utils\ExpressionType;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class ConstantBuilder implements Builder {
+class ConstantBuilder {
 
     protected function buildAlias($parsed) {
         $builder = new AliasBuilder();
         return $builder->build($parsed);
     }
 
-    public function build(array $parsed) {
+    public function build($parsed) {
         if ($parsed['expr_type'] !== ExpressionType::CONSTANT) {
             return "";
         }

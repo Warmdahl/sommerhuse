@@ -35,11 +35,9 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: CreateTableSelectOptionBuilder.php 932 2014-01-08 13:15:26Z phosco@gmx.de $
  * 
  */
-
-namespace PHPSQLParser\builders;
 
 /**
  * This class implements the builder for the select-options statement part of CREATE TABLE. 
@@ -49,9 +47,9 @@ namespace PHPSQLParser\builders;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class CreateTableSelectOptionBuilder implements Builder {
+class CreateTableSelectOptionBuilder {
 
-    public function build(array $parsed) {
+    public function build($parsed) {
         if (!isset($parsed['select-option']) || $parsed['select-option'] === false) {
             return "";
         }

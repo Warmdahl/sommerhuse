@@ -11,7 +11,7 @@
 /**
  * Sends Messages over SMTP.
  *
- * @author Chris Corbyn
+ * @author     Chris Corbyn
  */
 abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
 {
@@ -57,7 +57,7 @@ abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
      *
      * @param string $domain
      *
-     * @return $this
+     * @return Swift_Transport_AbstractSmtpTransport
      */
     public function setLocalDomain($domain)
     {
@@ -87,7 +87,7 @@ abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
     }
 
     /**
-     * Returns the IP used to connect to the destination.
+     * Returns the IP used to connect to the destination
      *
      * @return string
      */
@@ -159,10 +159,9 @@ abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
         }
 
         if (!$reversePath = $this->_getReversePath($message)) {
-            $this->_throwException(new Swift_TransportException(
+            throw new Swift_TransportException(
                 'Cannot send message without a sender address'
-                )
-            );
+                );
         }
 
         $to = (array) $message->getTo();
@@ -301,7 +300,7 @@ abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
     protected function _doMailFromCommand($address)
     {
         $this->executeCommand(
-            sprintf("MAIL FROM:<%s>\r\n", $address), array(250)
+            sprintf("MAIL FROM: <%s>\r\n", $address), array(250)
             );
     }
 
@@ -309,7 +308,7 @@ abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
     protected function _doRcptToCommand($address)
     {
         $this->executeCommand(
-            sprintf("RCPT TO:<%s>\r\n", $address), array(250, 251, 252)
+            sprintf("RCPT TO: <%s>\r\n", $address), array(250, 251, 252)
             );
     }
 
@@ -396,7 +395,7 @@ abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
             do {
                 $line = $this->_buffer->readLine($seq);
                 $response .= $line;
-            } while (null !== $line && false !== $line && ' ' != $line[3]);
+            } while (null !== $line && false !== $line && ' ' != $line{3});
         } catch (Swift_TransportException $e) {
             $this->_throwException($e);
         } catch (Swift_IoException $e) {
@@ -417,7 +416,7 @@ abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
         foreach ($recipients as $forwardPath) {
             try {
                 $this->_doRcptToCommand($forwardPath);
-                ++$sent;
+                $sent++;
             } catch (Swift_TransportException $e) {
                 $failedRecipients[] = $forwardPath;
             }
@@ -461,17 +460,11 @@ abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
     /** Try to determine the hostname of the server this is run on */
     private function _lookupHostname()
     {
-        if (!empty($_SERVER['SERVER_NAME']) && $this->_isFqdn($_SERVER['SERVER_NAME'])) {
+        if (!empty($_SERVER['SERVER_NAME'])
+            && $this->_isFqdn($_SERVER['SERVER_NAME'])) {
             $this->_domain = $_SERVER['SERVER_NAME'];
         } elseif (!empty($_SERVER['SERVER_ADDR'])) {
-            // Set the address literal tag (See RFC 5321, section: 4.1.3)
-            if (false === strpos($_SERVER['SERVER_ADDR'], ':')) {
-                $prefix = ''; // IPv4 addresses are not tagged.
-            } else {
-                $prefix = 'IPv6:'; // Adding prefix in case of IPv6.
-            }
-
-            $this->_domain = sprintf('[%s%s]', $prefix, $_SERVER['SERVER_ADDR']);
+            $this->_domain = sprintf('[%s]', $_SERVER['SERVER_ADDR']);
         }
     }
 
@@ -481,9 +474,9 @@ abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
         // We could do a really thorough check, but there's really no point
         if (false !== $dotPos = strpos($hostname, '.')) {
             return ($dotPos > 0) && ($dotPos != strlen($hostname) - 1);
+        } else {
+            return false;
         }
-
-        return false;
     }
 
     /**
@@ -491,9 +484,6 @@ abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
      */
     public function __destruct()
     {
-        try {
-            $this->stop();
-        } catch (Exception $e) {
-        }
+        $this->stop();
     }
 }

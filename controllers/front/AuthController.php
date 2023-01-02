@@ -44,10 +44,6 @@ class AuthControllerCore extends FrontController
     {
         parent::init();
 
-        $this->confirmations = array();
-        $this->informations = array();
-        $this->errors = array();
-
         if (!Tools::getIsset('step') && $this->context->customer->isLogged() && !$this->ajax) {
             Tools::redirect('index.php?controller='.(($this->authRedirection !== false) ? urlencode($this->authRedirection) : 'my-account'));
         }
@@ -67,6 +63,8 @@ class AuthControllerCore extends FrontController
         if (!$this->useMobileTheme()) {
             $this->addCSS(_THEME_CSS_DIR_.'authentication.css');
         }
+
+        $this->addCSS(_THEME_CSS_DIR_.'htl-reservation-general.css');// webkul
 
         $this->addJqueryPlugin('typewatch');
         $this->addJS(array(
@@ -165,16 +163,12 @@ class AuthControllerCore extends FrontController
                 ));
 
             $return = array(
-                'hasConfirmation' => !empty($this->confirmations),
-                'confirmations' => $this->confirmations,
-                'hasInformation' => !empty($this->informations),
-                'informations' => $this->informations,
                 'hasError' => !empty($this->errors),
                 'errors' => $this->errors,
                 'page' => $this->context->smarty->fetch($this->template),
                 'token' => Tools::getToken(false)
             );
-            $this->ajaxDie(json_encode($return));
+            $this->ajaxDie(Tools::jsonEncode($return));
         }
     }
 
@@ -266,10 +260,6 @@ class AuthControllerCore extends FrontController
             $this->processSubmitAccount();
         }
 
-        if (Tools::isSubmit('submitTransformAccount')) {
-            $this->processTransformAccount();
-        }
-
         if (Tools::isSubmit('SubmitLogin')) {
             $this->processSubmitLogin();
         }
@@ -359,7 +349,7 @@ class AuthControllerCore extends FrontController
                 'errors' => $this->errors,
                 'token' => Tools::getToken(false)
             );
-            $this->ajaxDie(json_encode($return));
+            $this->ajaxDie(Tools::jsonEncode($return));
         } else {
             $this->context->smarty->assign('authentification_error', $this->errors);
         }
@@ -461,21 +451,20 @@ class AuthControllerCore extends FrontController
                 $objHtlCart = new HotelCartBookingData();
                 if ($htlCartInfo = $objHtlCart->getCartCurrentDataByCartId($this->context->cart->id)) {
                     if (isset($htlCartInfo[0]['id_hotel']) && ($idHotel = $htlCartInfo[0]['id_hotel'])) {
-                        if ($objHotel = new HotelBranchInformation()) {
-                            if ($address_info = $objHotel->getAddress($idHotel)) {
-                                $_POST['lastname'] = Tools::getValue('customer_lastname');
-                                $_POST['firstname'] = Tools::getValue('customer_firstname');
-                                $_POST['address1'] = $address_info['address1'];
-                                $_POST['city'] = $address_info['city'];
-                                $_POST['postcode'] = $address_info['postcode'];
-                                $_POST['alias'] = 'My address';
-                                $_POST['id_country'] = $address_info['id_country'];
-                                $_POST['id_state'] = $address_info['id_state'];
-                                $_POST['auto_generated'] = true;
-                                // if form is shorter then address name will be customer name
-                                $lastnameAddress = $_POST['lastname'];
-                                $firstnameAddress = $_POST['firstname'];
-                            }
+                        if (Validate::isLoadedObject($objHotel = new HotelBranchInformation($idHotel))) {
+                            $_POST['lastname'] = Tools::getValue('customer_lastname');
+                            $_POST['firstname'] = Tools::getValue('customer_firstname');
+                            $_POST['address1'] = $objHotel->address;
+                            $_POST['city'] = $objHotel->city;
+                            $_POST['postcode'] = $objHotel->zipcode;
+                            $_POST['alias'] = 'My address';
+                            $_POST['id_country'] = $objHotel->country_id;
+                            $_POST['id_state'] = $objHotel->state_id;
+                            $_POST['auto_generated'] = true;
+                            // if form is shorter then address name will be customer name
+                            $lastnameAddress = $_POST['lastname'];
+                            $firstnameAddress = $_POST['firstname'];
+
                         }
                     }
                 }
@@ -527,7 +516,7 @@ class AuthControllerCore extends FrontController
                                 'id_address_invoice' => $this->context->cart->id_address_invoice,
                                 'token' => Tools::getToken(false)
                             );
-                            $this->ajaxDie(json_encode($return));
+                            $this->ajaxDie(Tools::jsonEncode($return));
                         }
 
                         if (($back = Tools::getValue('back')) && $back == Tools::secureReferrer($back)) {
@@ -590,12 +579,8 @@ class AuthControllerCore extends FrontController
                     $this->errors[] = Tools::displayError('The Zip / Postal code is invalid.');
                 }
 
-                if ($country->need_identification_number) {
-                    if (!Configuration::get('PS_CUSTOMER_ADDRESS_CREATION')) {
-                        $$addresses_type->dni = null;
-                    } elseif (!Tools::getValue('dni') || !Validate::isDniLite(Tools::getValue('dni'))) {
-                        $this->errors[] = Tools::displayError('The identification number is incorrect or has already been used.');
-                    }
+                if ($country->need_identification_number && (!Tools::getValue('dni') || !Validate::isDniLite(Tools::getValue('dni')))) {
+                    $this->errors[] = Tools::displayError('The identification number is incorrect or has already been used.');
                 } elseif (!$country->need_identification_number) {
                     $$addresses_type->dni = null;
                 }
@@ -705,7 +690,7 @@ class AuthControllerCore extends FrontController
                                 'id_address_invoice' => $this->context->cart->id_address_invoice,
                                 'token' => Tools::getToken(false)
                             );
-                            $this->ajaxDie(json_encode($return));
+                            $this->ajaxDie(Tools::jsonEncode($return));
                         }
                         // if registration type is in two steps, we redirect to register address
                         if (!Configuration::get('PS_REGISTRATION_PROCESS_TYPE') && !$this->ajax && !Tools::isSubmit('submitGuestAccount')) {
@@ -745,7 +730,7 @@ class AuthControllerCore extends FrontController
                     'isSaved' => false,
                     'id_customer' => 0
                 );
-                $this->ajaxDie(json_encode($return));
+                $this->ajaxDie(Tools::jsonEncode($return));
             }
             $this->context->smarty->assign('account_error', $this->errors);
         }
@@ -759,32 +744,13 @@ class AuthControllerCore extends FrontController
         if (!Validate::isEmail($email = trim(Tools::getValue('email_create'))) || empty($email)) {
             $this->errors[] = Tools::displayError('Invalid email address.');
         } elseif (Customer::customerExists($email)) {
-            $this->errors[] = Tools::displayError('An account using this email address has already been registered. Please choose another one or sign in.', false);
+            $this->errors[] = Tools::displayError('An account using this email address has already been registered. Please enter a valid password or request a new one. ', false);
             $_POST['email'] = trim(Tools::getValue('email_create'));
             unset($_POST['email_create']);
-        } elseif ($id_customer = Customer::customerExists($email, true, false)) {
-            $this->informations[] = Tools::displayError('You are already registered as a guest with this email address.').'&nbsp;<button type="submit" class="btn btn-link alert-link btn-transform" name="submitTransformAccount">'.Tools::displayError('Click here').'</button>'.Tools::displayError('').' to generate a password for your account.';
         } else {
             $this->create_account = true;
             $this->context->smarty->assign('email_create', Tools::safeOutput($email));
             $_POST['email'] = $email;
-        }
-    }
-
-    /**
-     * Process submit for account transformation
-     */
-    protected function processTransformAccount()
-    {
-        if (!Validate::isEmail($email = trim(Tools::getValue('email_create'))) || empty($email)) {
-            $this->errors[] = Tools::displayError('Invalid email address.');
-        } elseif ($id_customer = Customer::customerExists($email, true, false)) {
-            $customer = new Customer($id_customer);
-            if ($customer->transformToCustomer($this->context->language->id)) {
-                $this->confirmations[] = 'TRANSFORM_OK';
-            } else {
-                $this->errors[] = Tools::displayError('Your guest account could not be transformed to a customer account.');
-            }
         }
     }
 

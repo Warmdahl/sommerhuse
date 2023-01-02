@@ -35,12 +35,11 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: PositionBuilder.php 830 2013-12-18 09:35:42Z phosco@gmx.de $
  * 
  */
 
-namespace PHPSQLParser\builders;
-use PHPSQLParser\utils\ExpressionType;
+require_once dirname(__FILE__) . '/../utils/ExpressionType.php';
 
 /**
  * This class implements the builder for positions of the GROUP-BY clause. 
@@ -50,9 +49,9 @@ use PHPSQLParser\utils\ExpressionType;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class PositionBuilder implements Builder {
+class PositionBuilder {
 
-    public function build(array $parsed) {
+    public function build($parsed) {
         if ($parsed['expr_type'] !== ExpressionType::POSITION) {
             return "";
         }

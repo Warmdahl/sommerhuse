@@ -46,7 +46,8 @@ class ProductControllerCore extends FrontController
             $this->addCSS(_THEME_CSS_DIR_.'product.css');
             $this->addCSS(_THEME_CSS_DIR_.'print.css', 'print');
             $this->addJqueryPlugin(array('fancybox', 'idTabs', 'scrollTo', 'serialScroll', 'bxslider'));
-            $this->addCSS(_THEME_CSS_DIR_.'datepicker.css');
+            // for the search block By webkul
+            $this->addCSS(_PS_MODULE_DIR_.'hotelreservationsystem/views/css/datepickerCustom.css');
             $this->addJS(array(
                 _THEME_JS_DIR_.'tools.js',  // retro compat themes 1.5
                 _THEME_JS_DIR_.'product.js'
@@ -268,10 +269,6 @@ class ProductControllerCore extends FrontController
             $htl_features = array();
             $obj_hotel_room_type = new HotelRoomType();
             $room_info_by_product_id = $obj_hotel_room_type->getRoomTypeInfoByIdProduct($this->product->id);
-            $productCapacity = array();
-            $productCapacity['adult'] = $room_info_by_product_id['adult'];
-            $productCapacity['children'] = $room_info_by_product_id['children'];
-            $this->product->capacity = $productCapacity;
             $hotel_id = $room_info_by_product_id['id_hotel'];
             $useTax = HotelBookingDetail::useTax();
             if (isset($hotel_id) && $hotel_id) {
@@ -280,9 +277,9 @@ class ProductControllerCore extends FrontController
                 $hotel_policies = $hotel_info_by_id['policies'];
                 $hotel_name = $hotel_info_by_id['hotel_name'];
 
-                $addressInfo = $obj_hotel_branch->getAddress($room_info_by_product_id['id_hotel']);
-                $hotel_location = $addressInfo['city'].
-                    ($addressInfo['id_state']?', '.$addressInfo['state']:'').', '.$addressInfo['country'];
+                $country = Country::getNameById($this->context->language->id, $hotel_info_by_id['country_id']);
+                $state = State::getNameById($hotel_info_by_id['state_id']);
+                $hotel_location = $hotel_info_by_id['city'].', '.$state.', '.$country;
 
                 $obj_hotel_feaures_ids = $obj_hotel_branch->getFeaturesOfHotelByHotelId($hotel_id);
 
@@ -367,13 +364,10 @@ class ProductControllerCore extends FrontController
                         'num_days' => $num_days,
                         'date_from' => $date_from,
                         'date_to' => $date_to,
-                        'hotel_check_in' => date('h:i a', strtotime($hotel_branch_obj->check_in)),
-                        'hotel_check_out' => date('h:i a', strtotime($hotel_branch_obj->check_out)),
                         'hotel_location' => $hotel_location,
                         'hotel_name' => $hotel_name,
                         'hotel_policies' => $hotel_policies,
                         'hotel_features' => $htl_features,
-                        'hotel_has_images' => (bool) HotelImage::getCover($hotel_id),
                         'ftr_img_src' => _PS_IMG_.'rf/',
                         'order_date_restrict' => $order_date_restrict
                     )
@@ -415,7 +409,6 @@ class ProductControllerCore extends FrontController
             $this->context->smarty->assign(
                 array(
                     'room_type_demands' => $roomTypeDemands,
-                    'WK_PRICE_CALC_METHOD_EACH_DAY' => HotelRoomTypeGlobalDemand::WK_PRICE_CALC_METHOD_EACH_DAY,
                     'product_id_hotel' => $hotel_id,
                     'stock_management' => Configuration::get('PS_STOCK_MANAGEMENT'),
                     'customizationFields' => $customization_fields,
@@ -473,7 +466,7 @@ class ProductControllerCore extends FrontController
         }
 
         // Tax
-        $tax = (float)$this->product->getTaxesRate();
+        $tax = (float)$this->product->getTaxesRate(new Address((int)$this->context->cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')}));
         $this->context->smarty->assign('tax_rate', $tax);
 
         $product_price_with_tax = Product::getPriceStatic($this->product->id, true, null, 6);
@@ -482,7 +475,7 @@ class ProductControllerCore extends FrontController
         }
         $product_price_without_eco_tax = (float)$product_price_with_tax - $this->product->ecotax;
 
-        $ecotax_rate = (float)Tax::getProductEcotaxRate(Cart::getIdAddressForTaxCalculation($this->product->id));
+        $ecotax_rate = (float)Tax::getProductEcotaxRate($this->context->cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')});
         if (Product::$_taxCalculationMethod == PS_TAX_INC && (int)Configuration::get('PS_TAX')) {
             $ecotax_tax_amount = Tools::ps_round($this->product->ecotax * (1 + $ecotax_rate / 100), 2);
         } else {
@@ -513,7 +506,7 @@ class ProductControllerCore extends FrontController
             }
         }
 
-        $address = new Address(Cart::getIdAddressForTaxCalculation($this->product->id));
+        $address = new Address($this->context->cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')});
         $this->context->smarty->assign(
             array(
                 'quantity_discounts' => $this->formatQuantityDiscounts($quantity_discounts, null, (float)$tax, $ecotax_tax_amount),
@@ -976,7 +969,7 @@ class ProductControllerCore extends FrontController
                             $totalPrice += $totalRoomPrice;
                             $demandsPrice = 0;
                             if ($roomDemand = Tools::getValue('room_demands')) {
-                                if ($roomDemand = json_decode($roomDemand, true)) {
+                                if ($roomDemand = Tools::jsonDecode($roomDemand, true)) {
                                     $objRoomDemandPrice = new HotelRoomTypeDemandPrice();
                                     $demandsPrice = $objRoomDemandPrice->getRoomTypeDemandsTotalPrice(
                                         $idProduct,
@@ -1016,42 +1009,6 @@ class ProductControllerCore extends FrontController
             $result['msg'] = 'failed3';
             $result['avail_rooms'] = 0;
         }
-        die(json_encode($result));
-    }
-
-    public function displayAjaxGetHotelImages()
-    {
-        $response = array('status' => false);
-        $idProduct = (int) Tools::getValue('id_product');
-        $page = (int) Tools::getValue('page');
-        $imagesPerPage = (int) Configuration::get('PS_HOTEL_IMAGES_PER_PAGE');
-
-        $objHotelRoomType = new HotelRoomType();
-        $objHotelImage = new HotelImage();
-
-        $roomTypeInfo = $objHotelRoomType->getRoomTypeInfoByIdProduct($idProduct);
-        $idHotel = $roomTypeInfo['id_hotel'];
-        $hotelImages = $objHotelImage->getImagesByHotelId($idHotel, $page, $imagesPerPage);
-        $hasNextPage = ($objHotelImage->getImagesByHotelId($idHotel, $page + 1, $imagesPerPage)) ? true : false;
-        $hotelImagesBaseDir = _MODULE_DIR_.'hotelreservationsystem/views/img/hotel_img/';
-        foreach ($hotelImages as &$hotelImage) {
-            $hotelImage['link'] = $this->context->link->getMediaLink(
-                $hotelImagesBaseDir.$hotelImage['hotel_image_id'].'.jpg'
-            );
-        }
-
-        if (is_array($hotelImages) && count($hotelImages)) {
-            $this->context->smarty->assign(array('hotel_images' => $hotelImages));
-            $html = $this->context->smarty->fetch(
-                $this->getTemplatePath('_partials/hotel_images.tpl')
-            );
-
-            $response['html'] = $html;
-            $response['status'] = true;
-            $response['has_next_page'] = $hasNextPage;
-            $response['message'] = 'HTML_OK';
-        }
-
-        die(json_encode($response));
+        die(Tools::jsonEncode($result));
     }
 }

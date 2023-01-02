@@ -104,7 +104,65 @@ class ToolsCore
             }
         }
 
-        return false;
+        if (function_exists('mcrypt_create_iv')) {
+            $bytes = mcrypt_create_iv($length, MCRYPT_DEV_URANDOM);
+
+            if ($bytes !== false && strlen($bytes) === $length) {
+                return $bytes;
+            }
+        }
+
+        // Else try to get $length bytes of entropy.
+        // Thanks to Zend
+
+        $result         = '';
+        $entropy        = '';
+        $msec_per_round = 400;
+        $bits_per_round = 2;
+        $total          = $length;
+        $hash_length    = 20;
+
+        while (strlen($result) < $length) {
+            $bytes  = ($total > $hash_length) ? $hash_length : $total;
+            $total -= $bytes;
+
+            for ($i=1; $i < 3; $i++) {
+                $t1 = microtime(true);
+                $seed = mt_rand();
+
+                for ($j=1; $j < 50; $j++) {
+                    $seed = sha1($seed);
+                }
+
+                $t2 = microtime(true);
+                $entropy .= $t1 . $t2;
+            }
+
+            $div = (int) (($t2 - $t1) * 1000000);
+
+            if ($div <= 0) {
+                $div = 400;
+            }
+
+            $rounds = (int) ($msec_per_round * 50 / $div);
+            $iter = $bytes * (int) (ceil(8 / $bits_per_round));
+
+            for ($i = 0; $i < $iter; $i ++) {
+                $t1 = microtime();
+                $seed = sha1(mt_rand());
+
+                for ($j = 0; $j < $rounds; $j++) {
+                    $seed = sha1($seed);
+                }
+
+                $t2 = microtime();
+                $entropy .= $t1 . $t2;
+            }
+
+            $result .= sha1($entropy, true);
+        }
+
+        return substr($result, 0, $length);
     }
 
     public static function strReplaceFirst($search, $replace, $subject, $cur = 0)
@@ -868,11 +926,6 @@ class ToolsCore
         return html_entity_decode((string)$string, ENT_QUOTES, 'utf-8');
     }
 
-    public static function removeHtmlComments($html)
-    {
-        return preg_replace('/<!--(.|\s)*?-->/', '', $html);
-    }
-
     public static function safePostVars()
     {
         if (!isset($_POST) || !is_array($_POST)) {
@@ -1013,7 +1066,7 @@ class ToolsCore
 
         echo '
 			<script type="text/javascript">
-				console.'.$type.'('.json_encode($object).');
+				console.'.$type.'('.Tools::jsonEncode($object).');
 			</script>
 		';
     }
@@ -1769,10 +1822,10 @@ class ToolsCore
         return Tools::strtoupper(Tools::substr($str, 0, 1)).Tools::substr($str, 1);
     }
 
-    public static function ucwords($str, $encoding = 'utf-8')
+    public static function ucwords($str)
     {
         if (function_exists('mb_convert_case')) {
-            return mb_convert_case($str, MB_CASE_TITLE, $encoding);
+            return mb_convert_case($str, MB_CASE_TITLE);
         }
         return ucwords(Tools::strtolower($str));
     }
@@ -2169,8 +2222,8 @@ class ToolsCore
     public static function parserSQL($sql)
     {
         if (strlen($sql) > 0) {
-            require_once _PS_TOOL_DIR_.'parser_sql/php_sql_parser_autoload.php';
-            $parser = new PHPSQLParser\PHPSQLParser($sql);
+            require_once(_PS_TOOL_DIR_.'parser_sql/PHPSQLParser.php');
+            $parser = new PHPSQLParser($sql);
             return $parser->parsed;
         }
         return false;
@@ -2607,15 +2660,19 @@ exit;
     /**
      * jsonDecode convert json string to php array / object
      *
-     * @param string $data
+     * @param string $json
      * @param bool $assoc  (since 1.4.2.4) if true, convert to associativ array
      * @return array
      */
-    public static function jsonDecode($data, $assoc = false, $depth = 512, $options = 0
-    )
+    public static function jsonDecode($json, $assoc = false)
     {
-        Tools::displayAsDeprecated();
-        return json_decode($data, $assoc, $depth, $options);
+        if (function_exists('json_decode')) {
+            return json_decode($json, $assoc);
+        } else {
+            include_once(_PS_TOOL_DIR_.'json/json.php');
+            $pear_json = new Services_JSON(($assoc) ? SERVICES_JSON_LOOSE_TYPE : 0);
+            return $pear_json->decode($json);
+        }
     }
 
     /**
@@ -2624,15 +2681,15 @@ exit;
      * @param array $data
      * @return string json
      */
-    public static function jsonEncode($data, $options = 0, $depth = 512)
+    public static function jsonEncode($data)
     {
-        Tools::displayAsDeprecated();
-        if (PHP_VERSION_ID < 50500) { /* PHP version < 5.5.0 */
-            return json_encode($data, $options);
+        if (function_exists('json_encode')) {
+            return json_encode($data);
+        } else {
+            include_once(_PS_TOOL_DIR_.'json/json.php');
+            $pear_json = new Services_JSON();
+            return $pear_json->encode($data);
         }
-
-        return json_encode($data, $options, $depth);
-
     }
 
     /**
@@ -2643,12 +2700,10 @@ exit;
         $backtrace = debug_backtrace();
         $callee = next($backtrace);
         $class = isset($callee['class']) ? $callee['class'] : null;
-        $callee['file'] = isset($callee['file']) ? $callee['file'] : '<undefined>';
-        $callee['line'] = isset($callee['line']) ? $callee['line'] : '<undefined>';
         if ($message === null) {
             $message = 'The function '.$callee['function'].' (Line '.$callee['line'].') is deprecated and will be removed in the next major version.';
         }
-        $error = 'Function: <b>'.$callee['function'].'()</b> is deprecated in file: <b>'.$callee['file'].'</b> on line: <b>'.$callee['line'].'</b><br />';
+        $error = 'Function <b>'.$callee['function'].'()</b> is deprecated in <b>'.$callee['file'].'</b> on line <b>'.$callee['line'].'</b><br />';
 
         Tools::throwDeprecated($error, $message, $class);
     }
@@ -2799,9 +2854,14 @@ exit;
      */
     public static function ZipTest($from_file)
     {
-        $zip = new ZipArchive();
-
-        return ($zip->open($from_file, ZipArchive::CHECKCONS) === true);
+        if (class_exists('ZipArchive', false)) {
+            $zip = new ZipArchive();
+            return ($zip->open($from_file, ZIPARCHIVE::CHECKCONS) === true);
+        } else {
+            require_once(_PS_ROOT_DIR_.'/tools/pclzip/pclzip.lib.php');
+            $zip = new PclZip($from_file);
+            return ($zip->privCheckFormat() === true);
+        }
     }
 
     public static function getSafeModeStatus()
@@ -2821,12 +2881,23 @@ exit;
         if (!file_exists($to_dir)) {
             mkdir($to_dir, 0777);
         }
-        $zip = new ZipArchive();
-        if ($zip->open($from_file) === true && $zip->extractTo($to_dir) && $zip->close()) {
+        if (class_exists('ZipArchive', false)) {
+            $zip = new ZipArchive();
+            if ($zip->open($from_file) === true && $zip->extractTo($to_dir) && $zip->close()) {
+                return true;
+            }
+            return false;
+        } else {
+            require_once(_PS_ROOT_DIR_.'/tools/pclzip/pclzip.lib.php');
+            $zip = new PclZip($from_file);
+            $list = $zip->extract(PCLZIP_OPT_PATH, $to_dir, PCLZIP_OPT_REPLACE_NEWER);
+            foreach ($list as $file) {
+                if ($file['status'] != 'ok' && $file['status'] != 'already_a_directory') {
+                    return false;
+                }
+            }
             return true;
         }
-
-        return false;
     }
 
     public static function chmodr($path, $filemode)
@@ -3320,7 +3391,7 @@ exit;
         }
 
         $post_data = http_build_query(array(
-            'version' => isset($params['version']) ? $params['version'] : _QLOAPPS_VERSION_,
+            'version' => isset($params['version']) ? $params['version'] : _PS_VERSION_,
             'iso_lang' => Tools::strtolower(isset($params['iso_lang']) ? $params['iso_lang'] : Context::getContext()->language->iso_code),
             'iso_code' => Tools::strtolower(isset($params['iso_country']) ? $params['iso_country'] : Country::getIsoById(Configuration::get('PS_COUNTRY_DEFAULT'))),
             'shop_url' => isset($params['shop_url']) ? $params['shop_url'] : Tools::getShopDomain(),
@@ -3328,7 +3399,7 @@ exit;
         ));
 
         $protocols = array('https');
-        $end_point = 'api.qloapps.com';
+        $end_point = 'api.addons.prestashop.com';
 
         switch ($request) {
             case 'native':
@@ -3362,7 +3433,7 @@ exit;
                 $post_data .= '&method=check&module_name='.urlencode($params['module_name']).'&module_key='.urlencode($params['module_key']);
                 break;
             case 'module':
-                $post_data .= '&method=module&module_name='.urlencode($params['module_name']);
+                $post_data .= '&method=module&id_module='.urlencode($params['id_module']);
                 if (isset($params['username_addons']) && isset($params['password_addons'])) {
                     $post_data .= '&username='.urlencode($params['username_addons']).'&password='.urlencode($params['password_addons']);
                 } else {
@@ -3390,7 +3461,7 @@ exit;
                 'method'  => 'POST',
                 'content' => $post_data,
                 'header'  => 'Content-type: application/x-www-form-urlencoded',
-                'timeout' => 10,
+                'timeout' => 5,
             )
         ));
 
@@ -3555,6 +3626,8 @@ exit;
 
     public static function purifyHTML($html, $uri_unescape = null, $allow_style = false)
     {
+        require_once(_PS_TOOL_DIR_.'htmlpurifier/HTMLPurifier.standalone.php');
+
         static $use_html_purifier = null;
         static $purifier = null;
 

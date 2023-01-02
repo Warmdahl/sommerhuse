@@ -49,8 +49,6 @@ class IdentityControllerCore extends FrontController
         $origin_newsletter = (bool)$this->customer->newsletter;
 
         if (Tools::isSubmit('submitIdentity')) {
-            Hook::exec('actionSubmitIdentityBefore');
-
             $email = trim(Tools::getValue('email'));
 
             if (Tools::getValue('months') != '' && Tools::getValue('days') != '' && Tools::getValue('years') != '') {

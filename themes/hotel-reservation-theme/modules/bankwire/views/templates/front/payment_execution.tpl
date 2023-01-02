@@ -45,19 +45,19 @@
             <h3 class="page-subheading">
                 {l s='Bank-wire payment' mod='bankwire'}
             </h3>
-            <p class="cheque-indent">
+            <p class="cheque-indent htl-reservation-page-content">
                 <strong class="dark">
                     {l s='You have chosen to pay by bank wire.' mod='bankwire'} {l s='Here is a short summary of your order:' mod='bankwire'}
                 </strong>
             </p>
-            <p>
+            <p class="htl-reservation-page-content">
                 - {l s='The total amount of your order is' mod='bankwire'}
                 <span id="amount" class="price">{displayPrice price=$total}</span>
                 {if $use_taxes == 1}
                     {l s='(tax incl.)' mod='bankwire'}
                 {/if}
             </p>
-            <p>
+            <p class="htl-reservation-page-content">
                 -
                 {if $currencies|@count > 1}
                     {l s='We allow several currencies to be sent via bank wire.' mod='bankwire'}
@@ -78,7 +78,7 @@
                     <input type="hidden" name="currency_payment" value="{$currencies.0.id_currency}" />
                 {/if}
             </p>
-            <p>
+            <p class="htl-reservation-page-content">
                 - {l s='Bank wire account information will be displayed on the next page.' mod='bankwire'}
                 <br />
                 - {l s='Please confirm your order by clicking "I confirm my order".' mod='bankwire'}

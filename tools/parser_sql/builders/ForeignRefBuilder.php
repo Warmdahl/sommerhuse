@@ -35,13 +35,15 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: ForeignRefBuilder.php 927 2014-01-08 13:01:17Z phosco@gmx.de $
  * 
  */
 
-namespace PHPSQLParser\builders;
-use PHPSQLParser\exceptions\UnableToCreateSQLException;
-use PHPSQLParser\utils\ExpressionType;
+require_once dirname(__FILE__) . '/../utils/ExpressionType.php';
+require_once dirname(__FILE__) . '/../exceptions/UnableToCreateSQLException.php';
+require_once dirname(__FILE__) . '/TableBuilder.php';
+require_once dirname(__FILE__) . '/ReservedBuilder.php';
+require_once dirname(__FILE__) . '/ColumnListBuilder.php';
 
 /**
  * This class implements the builder for the FOREIGN KEY REFERENCES statement
@@ -52,7 +54,7 @@ use PHPSQLParser\utils\ExpressionType;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class ForeignRefBuilder implements Builder {
+class ForeignRefBuilder {
 
     protected function buildTable($parsed) {
         $builder = new TableBuilder();
@@ -69,7 +71,7 @@ class ForeignRefBuilder implements Builder {
         return $builder->build($parsed);
     }
 
-    public function build(array $parsed) {
+    public function build($parsed) {
         if ($parsed['expr_type'] !== ExpressionType::REFERENCE) {
             return "";
         }

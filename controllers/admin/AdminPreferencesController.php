@@ -117,7 +117,7 @@ class AdminPreferencesControllerCore extends AdminController
             $fields = array_merge($fields, array(
                 'PS_TOKEN_ENABLE' => array(
                     'title' => $this->l('Increase front office security'),
-                    'desc' => $this->l('Enable or disable token in the Front Office to improve QloApps\'s security.'),
+                    'desc' => $this->l('Enable or disable token in the Front Office to improve Qloapps\'s security.'),
                     'validation' => 'isBool',
                     'cast' => 'intval',
                     'type' => 'bool',
@@ -207,14 +207,14 @@ class AdminPreferencesControllerCore extends AdminController
                 //     'type' => 'bool',
                 //     'visibility' => Shop::CONTEXT_ALL
                 // ),
-                // 'PS_SHOP_ACTIVITY' => array(
-                //     'title' => $this->l('Main Shop Activity'),
-                //     'validation' => 'isInt',
-                //     'cast' => 'intval',
-                //     'type' => 'select',
-                //     'list' => $activities2,
-                //     'identifier' => 'value'
-                // ),
+                'PS_SHOP_ACTIVITY' => array(
+                    'title' => $this->l('Main Shop Activity'),
+                    'validation' => 'isInt',
+                    'cast' => 'intval',
+                    'type' => 'select',
+                    'list' => $activities2,
+                    'identifier' => 'value'
+                ),
             ));
 
             // No HTTPS activation if you haven't already.

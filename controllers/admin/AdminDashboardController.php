@@ -200,8 +200,8 @@ class AdminDashboardControllerCore extends AdminController
         // 	'Save' => $this->l('Save', 'AdminStatsTab')
         // );
 
-        $test_stats_date_update = $this->context->cookie->stats_date_update;
-        if (!empty($test_stats_date_update) && $this->context->cookie->stats_date_update < strtotime(date('Y-m-d'))) {
+        $test_stats_date_update = $this->context->cookie->__get('stats_date_update');
+        if (!empty($test_stats_date_update) && $this->context->cookie->__get('stats_date_update') < strtotime(date('Y-m-d'))) {
             switch ($this->context->employee->preselect_date_range) {
                 case 'day':
                     $date_from = date('Y-m-d');
@@ -232,12 +232,8 @@ class AdminDashboardControllerCore extends AdminController
             $this->context->employee->stats_date_from = $date_from;
             $this->context->employee->stats_date_to = $date_to;
             $this->context->employee->update();
-            $this->context->cookie->stats_date_update = strtotime(date('Y-m-d'));
+            $this->context->cookie->__set('stats_date_update', strtotime(date('Y-m-d')));
             $this->context->cookie->write();
-        }
-
-        if (!$this->context->cookie->stats_id_hotel) {
-            $this->context->cookie->stats_id_hotel = false;
         }
 
         $calendar_helper = new HelperCalendar();
@@ -262,32 +258,17 @@ class AdminDashboardControllerCore extends AdminController
 
         $params = array(
             'date_from' => $this->context->employee->stats_date_from,
-            'date_to' => $this->context->employee->stats_date_to,
-            'id_hotel' => (int) $this->context->cookie->stats_id_hotel,
+            'date_to' => $this->context->employee->stats_date_to
         );
 
-        $objHotelInfo = new HotelBranchInformation();
-        $idsHotel = $objHotelInfo->getProfileAccessedHotels($this->context->employee->id_profile, 1, 1);
-        $hotelOptions = array(array('id_hotel' => false, 'hotel_name' => $this->l('All Hotels')));
-        foreach ($idsHotel as $idHotel) {
-            $objHotelBranchInfo = new HotelBranchInformation($idHotel, $this->context->language->id);
-            $hotelAddressInfo = $objHotelBranchInfo->getAddress($idHotel);
-            $hotelOptions[] = array(
-                'id_hotel' => (int) $idHotel,
-                'hotel_name' => $objHotelBranchInfo->hotel_name.', '.$hotelAddressInfo['city'],
-            );
-        }
         $this->tpl_view_vars = array(
             'date_from' => $this->context->employee->stats_date_from,
             'date_to' => $this->context->employee->stats_date_to,
-            'id_hotel' => (int) $this->context->cookie->stats_id_hotel,
-            'hotel_options' => $hotelOptions,
-            'hookDashboardTop' => Hook::exec('dashboardTop', $params),
             'hookDashboardZoneOne' => Hook::exec('dashboardZoneOne', $params),
             'hookDashboardZoneTwo' => Hook::exec('dashboardZoneTwo', $params),
             'hookDashboardZoneThree' => Hook::exec('dashboardZoneThree', $params),
             //'translations' => $translations,
-            'action' => self::$currentIndex.'&token='.$this->token,
+            'action' => '#',
             'warning' => $this->getWarningDomainName(),
             'new_version_url' => Tools::getCurrentUrlProtocolPrefix()._PS_API_DOMAIN_.'/version/check_version.php?v='._PS_VERSION_.'&lang='.$this->context->language->iso_code.'&autoupgrade='.(int)(Module::isInstalled('autoupgrade') && Module::isEnabled('autoupgrade')).'&hosted_mode='.(int)defined('_PS_HOST_MODE_'),
             'dashboard_use_push' => Configuration::get('PS_DASHBOARD_USE_PUSH'),
@@ -302,6 +283,18 @@ class AdminDashboardControllerCore extends AdminController
 
     public function postProcess()
     {
+        if (Tools::isSubmit('submitDateRealTime')) {
+            if ($use_realtime = (int)Tools::getValue('submitDateRealTime')) {
+                $this->context->employee->stats_date_from = date('Y-m-d');
+                $this->context->employee->stats_date_to = date('Y-m-d');
+                $this->context->employee->stats_compare_option = HelperCalendar::DEFAULT_COMPARE_OPTION;
+                $this->context->employee->stats_compare_from = null;
+                $this->context->employee->stats_compare_to = null;
+                $this->context->employee->update();
+            }
+            Configuration::updateValue('PS_DASHBOARD_USE_PUSH', $use_realtime);
+        }
+
         if (Tools::isSubmit('submitDateRange')) {
             if (!Validate::isDate(Tools::getValue('date_from'))
                 || !Validate::isDate(Tools::getValue('date_to'))) {
@@ -331,22 +324,6 @@ class AdminDashboardControllerCore extends AdminController
                 }
 
                 $this->context->employee->update();
-                Tools::redirectAdmin(self::$currentIndex.'&token='.$this->token);
-            }
-        }
-
-        if (Tools::isSubmit('submitStatsHotel')) {
-            $statsIdHotel = Tools::getValue('stats_id_hotel');
-            if ($statsIdHotel) {
-                $objHotelInfo = new HotelBranchInformation();
-                $idsHotel = $objHotelInfo->getProfileAccessedHotels($this->context->employee->id_profile, 1, 1);
-                if (is_array($idsHotel) && count($idsHotel) && !in_array($statsIdHotel, $idsHotel)) {
-                    $this->errors[] = $this->l('No permission for requested hotel.');
-                }
-            }
-            if (!count($this->errors)) {
-                $this->context->cookie->stats_id_hotel = $statsIdHotel;
-                Tools::redirectAdmin(self::$currentIndex.'&token='.$this->token);
             }
         }
 
@@ -387,14 +364,13 @@ class AdminDashboardControllerCore extends AdminController
         $params = array(
             'date_from' => $this->context->employee->stats_date_from,
             'date_to' => $this->context->employee->stats_date_to,
-            'id_hotel' => (int) $this->context->cookie->stats_id_hotel,
             'compare_from' => $this->context->employee->stats_compare_from,
             'compare_to' => $this->context->employee->stats_compare_to,
             'dashboard_use_push' => (int)Tools::getValue('dashboard_use_push'),
-            'extra' => Tools::getValue('extra')
+            'extra' => (int)Tools::getValue('extra')
         );
 
-        die(json_encode(Hook::exec('dashboardData', $params, $id_module, true, true, (int)Tools::getValue('dashboard_use_push'))));
+        die(Tools::jsonEncode(Hook::exec('dashboardData', $params, $id_module, true, true, (int)Tools::getValue('dashboard_use_push'))));
     }
 
     public function ajaxProcessSetSimulationMode()
@@ -461,7 +437,7 @@ class AdminDashboardControllerCore extends AdminController
                 }
             }
         }
-        die(json_encode($return));
+        die(Tools::jsonEncode($return));
     }
 
     public function ajaxProcessSaveDashConfig()
@@ -499,6 +475,6 @@ class AdminDashboardControllerCore extends AdminController
             $return['widget_html'] = $module_obj->$hook($params);
         }
 
-        die(json_encode($return));
+        die(Tools::jsonEncode($return));
     }
 }

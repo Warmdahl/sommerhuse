@@ -7,5 +7,5 @@ if (substr(Tools::encrypt('blocklayered/index'),0,10) != Tools::getValue('token'
 	die('Bad token');
 
 $blockLayered = new BlockLayered();
-$cursor = json_decode(Tools::getValue('cursor', '{}'), true);
+$cursor = Tools::jsonDecode(Tools::getValue('cursor', '{}'), true);
 echo $blockLayered->indexUrl($cursor, (int)Tools::getValue('truncate'));

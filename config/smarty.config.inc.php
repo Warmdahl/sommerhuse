@@ -29,14 +29,7 @@ define('_PS_SMARTY_DIR_', _PS_TOOL_DIR_.'smarty/');
 require_once(_PS_SMARTY_DIR_.'Smarty.class.php');
 
 global $smarty;
-if (Configuration::get('PS_SMARTY_LOCAL')) {
-    $smarty = new SmartyCustom();
-} elseif (_PS_MODE_DEV_ && !defined('_PS_ADMIN_DIR_')) {
-    $smarty = new SmartyDev();
-} else {
-    $smarty = new Smarty();
-}
-
+$smarty = new SmartyCustom();
 $smarty->setCompileDir(_PS_CACHE_DIR_.'smarty/compile');
 $smarty->setCacheDir(_PS_CACHE_DIR_.'smarty/cache');
 if (!Tools::getSafeModeStatus()) {
@@ -45,7 +38,7 @@ if (!Tools::getSafeModeStatus()) {
 $smarty->setConfigDir(_PS_SMARTY_DIR_.'configs');
 $smarty->caching = false;
 if (Configuration::get('PS_SMARTY_CACHING_TYPE') == 'mysql') {
-    include _PS_CLASS_DIR_.'Smarty/SmartyCacheResourceMysql.php';
+    include(_PS_CLASS_DIR_.'/SmartyCacheResourceMysql.php');
     $smarty->caching_type = 'mysql';
 }
 $smarty->force_compile = (Configuration::get('PS_SMARTY_FORCE_COMPILE') == _PS_SMARTY_FORCE_COMPILE_) ? true : false;
@@ -62,27 +55,7 @@ if (defined('_PS_ADMIN_DIR_')) {
 } else {
     require_once(dirname(__FILE__).'/smartyfront.config.inc.php');
 }
-require_once SMARTY_PLUGINS_DIR.'modifier.truncate.php';
 
-// This escape modifier is required for invoice PDF generation
-function smartyEscape($string, $esc_type = 'html', $char_set = null, $double_encode = true)
-{
-    $escapeModifierFile = implode(
-        DIRECTORY_SEPARATOR,
-        array(
-            SMARTY_PLUGINS_DIR,
-            'modifier.escape.php',
-        )
-    );
-    require_once $escapeModifierFile;
-
-    global $smarty;
-    if (($esc_type === 'html' || $esc_type === 'htmlall') && $smarty->escape_html) {
-        return $string;
-    } else {
-        return smarty_modifier_escape($string, $esc_type, $char_set, $double_encode);
-    }
-}
 smartyRegisterFunction($smarty, 'modifier', 'truncate', 'smarty_modifier_truncate');
 smartyRegisterFunction($smarty, 'modifier', 'secureReferrer', array('Tools', 'secureReferrer'));
 
@@ -93,6 +66,8 @@ smartyRegisterFunction($smarty, 'function', 'd', 'smartyDieObject'); // Debug on
 smartyRegisterFunction($smarty, 'function', 'l', 'smartyTranslate', false);
 smartyRegisterFunction($smarty, 'function', 'hook', 'smartyHook');
 smartyRegisterFunction($smarty, 'function', 'toolsConvertPrice', 'toolsConvertPrice');
+smartyRegisterFunction($smarty, 'modifier', 'json_encode', array('Tools', 'jsonEncode'));
+smartyRegisterFunction($smarty, 'modifier', 'json_decode', array('Tools', 'jsonDecode'));
 smartyRegisterFunction($smarty, 'function', 'dateFormat', array('Tools', 'dateFormat'));
 smartyRegisterFunction($smarty, 'function', 'convertPrice', array('Product', 'convertPrice'));
 smartyRegisterFunction($smarty, 'function', 'convertPriceWithCurrency', array('Product', 'convertPriceWithCurrency'));
@@ -148,11 +123,30 @@ function smartyTruncate($params, &$smarty)
     return (isset($params['encode']) ? Tools::htmlentitiesUTF8($text, ENT_NOQUOTES) : $text);
 }
 
+function smarty_modifier_truncate($string, $length = 80, $etc = '...', $break_words = false, $middle = false, $charset = 'UTF-8')
+{
+    if (!$length) {
+        return '';
+    }
+
+    $string = trim($string);
+
+    if (Tools::strlen($string) > $length) {
+        $length -= min($length, Tools::strlen($etc));
+        if (!$break_words && !$middle) {
+            $string = preg_replace('/\s+?(\S+)?$/u', '', Tools::substr($string, 0, $length+1, $charset));
+        }
+        return !$middle ? Tools::substr($string, 0, $length, $charset).$etc : Tools::substr($string, 0, $length/2, $charset).$etc.Tools::substr($string, -$length/2, $length, $charset);
+    } else {
+        return $string;
+    }
+}
+
 function smarty_modifier_htmlentitiesUTF8($string)
 {
     return Tools::htmlentitiesUTF8($string);
 }
-function smartyMinifyHTML($tpl_output, $template)
+function smartyMinifyHTML($tpl_output, &$smarty)
 {
     $context = Context::getContext();
     if (isset($context->controller) && in_array($context->controller->php_self, array('pdf-invoice', 'pdf-order-return', 'pdf-order-slip'))) {
@@ -162,7 +156,7 @@ function smartyMinifyHTML($tpl_output, $template)
     return $tpl_output;
 }
 
-function smartyPackJSinHTML($tpl_output, $template)
+function smartyPackJSinHTML($tpl_output, &$smarty)
 {
     $context = Context::getContext();
     if (isset($context->controller) && in_array($context->controller->php_self, array('pdf-invoice', 'pdf-order-return', 'pdf-order-slip'))) {
@@ -181,9 +175,6 @@ function smartyRegisterFunction($smarty, $type, $function, $params, $lazy = true
     // lazy is better if the function is not called on every page
     if ($lazy) {
         $lazy_register = SmartyLazyRegister::getInstance();
-        if ($lazy_register->isRegistered($params)) {
-            return;
-        }
         $lazy_register->register($params);
 
         if (is_array($params)) {
@@ -230,3 +221,61 @@ function toolsConvertPrice($params, &$smarty)
     return Tools::convertPrice($params['price'], Context::getContext()->currency);
 }
 
+/**
+ * Used to delay loading of external classes with smarty->register_plugin
+ */
+class SmartyLazyRegister
+{
+    protected $registry = array();
+    protected static $instance;
+
+    /**
+     * Register a function or method to be dynamically called later
+     * @param string|array $params function name or array(object name, method name)
+     */
+    public function register($params)
+    {
+        if (is_array($params)) {
+            $this->registry[$params[1]] = $params;
+        } else {
+            $this->registry[$params] = $params;
+        }
+    }
+
+    /**
+     * Dynamically call static function or method
+     *
+     * @param string $name function name
+     * @param mixed $arguments function argument
+     * @return mixed function return
+     */
+    public function __call($name, $arguments)
+    {
+        $item = $this->registry[$name];
+
+        // case 1: call to static method - case 2 : call to static function
+        if (is_array($item[1])) {
+            return call_user_func_array($item[1].'::'.$item[0], array($arguments[0], &$arguments[1]));
+        } else {
+            $args = array();
+
+            foreach ($arguments as $a => $argument) {
+                if ($a == 0) {
+                    $args[] = $arguments[0];
+                } else {
+                    $args[] = &$arguments[$a];
+                }
+            }
+
+            return call_user_func_array($item, $args);
+        }
+    }
+
+    public static function getInstance()
+    {
+        if (!self::$instance) {
+            self::$instance = new SmartyLazyRegister();
+        }
+        return self::$instance;
+    }
+}

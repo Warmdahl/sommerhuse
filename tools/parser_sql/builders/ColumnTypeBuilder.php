@@ -35,14 +35,15 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: ColumnTypeBuilder.php 935 2014-01-08 13:58:11Z phosco@gmx.de $
  * 
  */
 
-namespace PHPSQLParser\builders;
-use PHPSQLParser\exceptions\UnableToCreateSQLException;
-use PHPSQLParser\utils\ExpressionType;
-
+require_once dirname(__FILE__) . '/../exceptions/UnableToCreateSQLException.php';
+require_once dirname(__FILE__) . '/ReservedBuilder.php';
+require_once dirname(__FILE__) . '/ColumnTypeBracketExpressionBuilder.php';
+require_once dirname(__FILE__) . '/DataTypeBuilder.php';
+require_once dirname(__FILE__) . '/../utils/ExpressionType.php';
 /**
  * This class implements the builder for the column type statement part of CREATE TABLE. 
  * You can overwrite all functions to achieve another handling.
@@ -51,7 +52,7 @@ use PHPSQLParser\utils\ExpressionType;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class ColumnTypeBuilder implements Builder {
+class ColumnTypeBuilder {
 
     protected function buildColumnTypeBracketExpression($parsed) {
         $builder = new ColumnTypeBracketExpressionBuilder();
@@ -68,19 +69,7 @@ class ColumnTypeBuilder implements Builder {
         return $builder->build($parsed);
     }
     
-    protected function buildDefaultValue($parsed) {
-        $builder = new DefaultValueBuilder();
-        return $builder->build($parsed);
-    }
-
-    protected function buildCharacterSet($parsed) {
-        if ($parsed['expr_type'] !== ExpressionType::CHARSET) {
-            return "";
-        }
-        return $parsed['base_expr'];
-    }
-
-    public function build(array $parsed) {
+    public function build($parsed) {
         if ($parsed['expr_type'] !== ExpressionType::COLUMN_TYPE) {
             return "";
         }
@@ -90,9 +79,7 @@ class ColumnTypeBuilder implements Builder {
             $sql .= $this->buildDataType($v);
             $sql .= $this->buildColumnTypeBracketExpression($v);
             $sql .= $this->buildReserved($v);
-            $sql .= $this->buildDefaultValue($v);
-            $sql .= $this->buildCharacterSet($v);
-
+            
             if ($len == strlen($sql)) {
                 throw new UnableToCreateSQLException('CREATE TABLE column-type subtree', $k, $v, 'expr_type');
             }

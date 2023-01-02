@@ -138,7 +138,7 @@ class OrderControllerCore extends ParentOrderController
                     )
                 )
             );
-            $this->ajaxDie(json_encode($return));
+            $this->ajaxDie(Tools::jsonEncode($return));
         }
 
         if ($this->nbProducts) {

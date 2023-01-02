@@ -116,5 +116,6 @@ class PasswordControllerCore extends FrontController
         if (count($this->errors)) {
             return;
         }
+        $this->addCSS(_THEME_CSS_DIR_.'htl-reservation-general.css');// by webkul
     }
 }

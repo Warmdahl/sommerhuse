@@ -35,14 +35,17 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: TableBracketExpressionBuilder.php 928 2014-01-08 13:01:57Z phosco@gmx.de $
  * 
  */
 
-namespace PHPSQLParser\builders;
-use PHPSQLParser\exceptions\UnableToCreateSQLException;
-use PHPSQLParser\utils\ExpressionType;
-
+require_once dirname(__FILE__) . '/../exceptions/UnableToCreateSQLException.php';
+require_once dirname(__FILE__) . '/ColumnDefinitionBuilder.php';
+require_once dirname(__FILE__) . '/PrimaryKeyBuilder.php';
+require_once dirname(__FILE__) . '/ForeignKeyBuilder.php';
+require_once dirname(__FILE__) . '/CheckBuilder.php';
+require_once dirname(__FILE__) . '/LikeExpressionBuilder.php';
+require_once dirname(__FILE__) . '/../utils/ExpressionType.php';
 /**
  * This class implements the builder for the table expressions 
  * within the create definitions of CREATE TABLE. 
@@ -52,7 +55,7 @@ use PHPSQLParser\utils\ExpressionType;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class TableBracketExpressionBuilder implements Builder {
+class TableBracketExpressionBuilder {
 
     protected function buildColDef($parsed) {
         $builder = new ColumnDefinitionBuilder();
@@ -79,12 +82,7 @@ class TableBracketExpressionBuilder implements Builder {
         return $builder->build($parsed);
     }
     
-    protected function buildIndexKey($parsed) {
-        $builder = new IndexKeyBuilder();
-        return $builder->build($parsed);
-    }
-    
-    public function build(array $parsed) {
+    public function build($parsed) {
         if ($parsed['expr_type'] !== ExpressionType::BRACKET_EXPRESSION) {
             return "";
         }
@@ -96,8 +94,7 @@ class TableBracketExpressionBuilder implements Builder {
             $sql .= $this->buildCheck($v);
             $sql .= $this->buildLikeExpression($v);
             $sql .= $this->buildForeignKey($v);
-            $sql .= $this->buildIndexKey($v);
-                        
+            
             if ($len == strlen($sql)) {
                 throw new UnableToCreateSQLException('CREATE TABLE create-def expression subtree', $k, $v, 'expr_type');
             }

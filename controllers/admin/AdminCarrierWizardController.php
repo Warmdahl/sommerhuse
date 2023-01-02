@@ -652,7 +652,7 @@ class AdminCarrierWizardControllerCore extends AdminController
             $return['errors'] = $this->errors;
         }
         if (count($this->errors) || $die) {
-            die(json_encode($return));
+            die(Tools::jsonEncode($return));
         }
     }
 
@@ -870,7 +870,7 @@ class AdminCarrierWizardControllerCore extends AdminController
                 $return['id_carrier'] = $carrier->id;
             }
         }
-        die(json_encode($return));
+        die(Tools::jsonEncode($return));
     }
 
     protected function changeGroups($id_carrier, $delete = true)

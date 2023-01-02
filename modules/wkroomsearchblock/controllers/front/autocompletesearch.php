@@ -60,6 +60,6 @@ class WkRoomSearchBlockAutoCompleteSearchModuleFrontController extends ModuleFro
         } else {
             $result['status'] = 'failed3';
         }
-        die(json_encode($result));
+        die(Tools::jsonEncode($result));
     }
 }

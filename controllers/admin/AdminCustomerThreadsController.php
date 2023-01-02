@@ -366,7 +366,6 @@ class AdminCustomerThreadsControllerCore extends AdminController
                         $current_employee->email,
                         $current_employee->firstname.' '.$current_employee->lastname,
                         null, null, _PS_MAIL_DIR_, true)) {
-                        $cm->id_employee = (int)$employee->id;
                         $cm->private = 1;
                         $cm->message = $this->l('Message forwarded to').' '.$employee->firstname.' '.$employee->lastname."\n".$this->l('Comment:').' '.$message;
                         $cm->add();
@@ -459,7 +458,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
 
     public function initContent()
     {
-        if (isset($_GET['filename']) && (bool)Tools::file_get_contents($this->context->link->getMediaLink(_THEME_PROD_PIC_DIR_.$_GET['filename'])) && Validate::isFileName($_GET['filename'])) { // by webkul
+        if (isset($_GET['filename']) && (bool)Tools::file_get_contents($context->link->getMediaLink(_THEME_PROD_PIC_DIR_.$_GET['filename'])) && Validate::isFileName($_GET['filename'])) { // by webkul
             AdminCustomerThreadsController::openUploadedFile();
         }
 
@@ -561,6 +560,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
             return;
         }
 
+        $this->context = Context::getContext();
         if (!($thread = $this->loadObject())) {
             return;
         }
@@ -800,7 +800,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
             'thread_url' => Tools::getAdminUrl(basename(_PS_ADMIN_DIR_).'/'.
                 $this->context->link->getAdminLink('AdminCustomerThreads').'&amp;id_customer_thread='
                 .(int)$message['id_customer_thread'].'&amp;viewcustomer_thread=1'),
-            'link' => $this->context->link,
+            'link' => Context::getContext()->link,
             'current' => self::$currentIndex,
             'token' => $this->token,
             'message' => $message,
@@ -808,7 +808,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
             'email' => $email,
             'id_employee' => $id_employee,
             'PS_SHOP_NAME' => Configuration::get('PS_SHOP_NAME'),
-            'file_name' => (bool)Tools::file_get_contents($this->context->link->getMediaLink(_THEME_PROD_PIC_DIR_.$message['file_name'])), // by webkul
+            'file_name' => (bool)Tools::file_get_contents($context->link->getMediaLink(_THEME_PROD_PIC_DIR_.$message['file_name'])), // by webkul
             'contacts' => $contacts,
             'is_valid_order_id' => $is_valid_order_id
         ));
@@ -896,7 +896,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
         }
 
         if (Tools::isSubmit('syncImapMail')) {
-            die(json_encode($this->syncImap()));
+            die(Tools::jsonEncode($this->syncImap()));
         }
     }
 

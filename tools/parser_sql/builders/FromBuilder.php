@@ -31,16 +31,18 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
- *
+ * @version   SVN: $Id: FromBuilder.php 830 2013-12-18 09:35:42Z phosco@gmx.de $
+ * 
  */
 
-namespace PHPSQLParser\builders;
-use PHPSQLParser\exceptions\UnableToCreateSQLException;
+require_once dirname(__FILE__) . '/../exceptions/UnableToCreateSQLException.php';
+require_once dirname(__FILE__) . '/TableBuilder.php';
+require_once dirname(__FILE__) . '/TableExpressionBuilder.php';
+require_once dirname(__FILE__) . '/SubQueryBuilder.php';
 
 /**
  * This class implements the builder for the [FROM] part. You can overwrite
@@ -48,9 +50,9 @@ use PHPSQLParser\exceptions\UnableToCreateSQLException;
  *
  * @author  André Rothe <andre.rothe@phosco.info>
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- *
+ *  
  */
-class FromBuilder implements Builder {
+class FromBuilder {
 
     protected function buildTable($parsed, $key) {
         $builder = new TableBuilder();
@@ -67,41 +69,16 @@ class FromBuilder implements Builder {
         return $builder->build($parsed, $key);
     }
 
-    public function build(array $parsed) {
+    public function build($parsed) {
         $sql = "";
-        if (array_key_exists("UNION ALL", $parsed) || array_key_exists("UNION", $parsed)) {
-            foreach ($parsed as $union_type => $outer_v) {
-                $first = true;
+        foreach ($parsed as $k => $v) {
+            $len = strlen($sql);
+            $sql .= $this->buildTable($v, $k);
+            $sql .= $this->buildTableExpression($v, $k);
+            $sql .= $this->buildSubquery($v, $k);
 
-                foreach ($outer_v as $item) {
-                    if (!$first) {
-                        $sql .= " $union_type ";
-                    }
-                    else {
-                        $first = false;
-                    }
-
-                    $select_builder = new SelectStatementBuilder();
-
-                    $len = strlen($sql);
-                    $sql .= $select_builder->build($item);
-
-                    if ($len === strlen($sql)) {
-                        throw new UnableToCreateSQLException('FROM', $union_type, $outer_v, 'expr_type');
-                    }
-                }
-            }
-        }
-        else {
-            foreach ($parsed as $k => $v) {
-                $len = strlen($sql);
-                $sql .= $this->buildTable($v, $k);
-                $sql .= $this->buildTableExpression($v, $k);
-                $sql .= $this->buildSubquery($v, $k);
-
-                if ($len == strlen($sql)) {
-                    throw new UnableToCreateSQLException('FROM', $k, $v, 'expr_type');
-                }
+            if ($len == strlen($sql)) {
+                throw new UnableToCreateSQLException('FROM', $k, $v, 'expr_type');
             }
         }
         return "FROM " . $sql;

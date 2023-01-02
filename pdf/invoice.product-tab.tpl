@@ -84,12 +84,12 @@
 						</td>
 						<td class="product center">
 							<p>
-								{$rm_v['data_form']}
+								{$rm_v['data_form']|date_format:"%d-%m-%Y"}
 							</p>
 						</td>
 						<td class="product center">
 							<p>
-								{$rm_v['data_to']}
+								{$rm_v['data_to']|date_format:"%d-%m-%Y"}
 							</p>
 						</td>
 						<td class="product center">

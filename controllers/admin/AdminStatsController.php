@@ -195,7 +195,7 @@ class AdminStatsControllerCore extends AdminStatsTabController
 		'.Shop::addSqlAssociation('product', 'p'));
     }
 
-    public static function getTotalSales($date_from, $date_to, $granularity = false, $id_hotel = false)
+    public static function getTotalSales($date_from, $date_to, $granularity = false)
     {
         if ($granularity == 'day') {
             $sales = array();
@@ -203,10 +203,8 @@ class AdminStatsControllerCore extends AdminStatsTabController
 			SELECT LEFT(`invoice_date`, 10) as date, SUM(total_paid_tax_excl / o.conversion_rate) as sales
 			FROM `'._DB_PREFIX_.'orders` o
 			LEFT JOIN `'._DB_PREFIX_.'order_state` os ON o.current_state = os.id_order_state
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
 			WHERE `invoice_date` BETWEEN "'.pSQL($date_from).' 00:00:00" AND "'.pSQL($date_to).' 23:59:59" AND os.logable = 1
-			'.Shop::addSqlRestriction(false, 'o')
-            .HotelBranchInformation::addHotelRestriction($id_hotel, 'hbd').'
+			'.Shop::addSqlRestriction(false, 'o').'
 			GROUP BY LEFT(`invoice_date`, 10)');
             foreach ($result as $row) {
                 $sales[strtotime($row['date'])] = $row['sales'];
@@ -218,10 +216,8 @@ class AdminStatsControllerCore extends AdminStatsTabController
 			SELECT LEFT(`invoice_date`, 7) as date, SUM(total_paid_tax_excl / o.conversion_rate) as sales
 			FROM `'._DB_PREFIX_.'orders` o
 			LEFT JOIN `'._DB_PREFIX_.'order_state` os ON o.current_state = os.id_order_state
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
 			WHERE `invoice_date` BETWEEN "'.pSQL($date_from).' 00:00:00" AND "'.pSQL($date_to).' 23:59:59" AND os.logable = 1
-			'.Shop::addSqlRestriction(false, 'o')
-            .HotelBranchInformation::addHotelRestriction($id_hotel, 'hbd').'
+			'.Shop::addSqlRestriction(false, 'o').'
 			GROUP BY LEFT(`invoice_date`, 7)');
             foreach ($result as $row) {
                 $sales[strtotime($row['date'].'-01')] = $row['sales'];
@@ -232,10 +228,8 @@ class AdminStatsControllerCore extends AdminStatsTabController
 			SELECT SUM(total_paid_tax_excl / o.conversion_rate)
 			FROM `'._DB_PREFIX_.'orders` o
 			LEFT JOIN `'._DB_PREFIX_.'order_state` os ON o.current_state = os.id_order_state
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
 			WHERE `invoice_date` BETWEEN "'.pSQL($date_from).' 00:00:00" AND "'.pSQL($date_to).' 23:59:59" AND os.logable = 1
-			'.Shop::addSqlRestriction(false, 'o')
-            .HotelBranchInformation::addHotelRestriction($id_hotel, 'hbd'));
+			'.Shop::addSqlRestriction(false, 'o'));
         }
     }
 
@@ -253,7 +247,7 @@ class AdminStatsControllerCore extends AdminStatsTabController
         return round(100 * $distinct_products / AdminStatsController::getTotalProducts()).'%';
     }
 
-    public static function getOrders($date_from, $date_to, $granularity = false, $id_hotel = false)
+    public static function getOrders($date_from, $date_to, $granularity = false)
     {
         if ($granularity == 'day') {
             $orders = array();
@@ -261,10 +255,8 @@ class AdminStatsControllerCore extends AdminStatsTabController
 			SELECT LEFT(`invoice_date`, 10) as date, COUNT(*) as orders
 			FROM `'._DB_PREFIX_.'orders` o
 			LEFT JOIN `'._DB_PREFIX_.'order_state` os ON o.current_state = os.id_order_state
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
 			WHERE `invoice_date` BETWEEN "'.pSQL($date_from).' 00:00:00" AND "'.pSQL($date_to).' 23:59:59" AND os.logable = 1
-			'.Shop::addSqlRestriction(false, 'o')
-            .HotelBranchInformation::addHotelRestriction($id_hotel, 'hbd').'
+			'.Shop::addSqlRestriction(false, 'o').'
 			GROUP BY LEFT(`invoice_date`, 10)');
             foreach ($result as $row) {
                 $orders[strtotime($row['date'])] = $row['orders'];
@@ -276,10 +268,8 @@ class AdminStatsControllerCore extends AdminStatsTabController
 			SELECT LEFT(`invoice_date`, 7) as date, COUNT(*) as orders
 			FROM `'._DB_PREFIX_.'orders` o
 			LEFT JOIN `'._DB_PREFIX_.'order_state` os ON o.current_state = os.id_order_state
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
 			WHERE `invoice_date` BETWEEN "'.pSQL($date_from).' 00:00:00" AND "'.pSQL($date_to).' 23:59:59" AND os.logable = 1
-			'.Shop::addSqlRestriction(false, 'o')
-            .HotelBranchInformation::addHotelRestriction($id_hotel, 'hbd').'
+			'.Shop::addSqlRestriction(false, 'o').'
 			GROUP BY LEFT(`invoice_date`, 7)');
             foreach ($result as $row) {
                 $orders[strtotime($row['date'].'-01')] = $row['orders'];
@@ -290,10 +280,8 @@ class AdminStatsControllerCore extends AdminStatsTabController
 			SELECT COUNT(*) as orders
 			FROM `'._DB_PREFIX_.'orders` o
 			LEFT JOIN `'._DB_PREFIX_.'order_state` os ON o.current_state = os.id_order_state
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
 			WHERE `invoice_date` BETWEEN "'.pSQL($date_from).' 00:00:00" AND "'.pSQL($date_to).' 23:59:59" AND os.logable = 1
-			'.Shop::addSqlRestriction(false, 'o')
-            .HotelBranchInformation::addHotelRestriction($id_hotel, 'hbd'));
+			'.Shop::addSqlRestriction(false, 'o'));
         }
 
         return $orders;
@@ -367,9 +355,9 @@ class AdminStatsControllerCore extends AdminStatsTabController
             return false;
         }
         $row = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow('
-		SELECT hbd.id_country, COUNT(*) as orders
+		SELECT a.id_country, COUNT(*) as orders
 		FROM `'._DB_PREFIX_.'orders` o
-		LEFT JOIN `'._DB_PREFIX_.'address` hbd ON o.id_address_delivery = hbd.id_address
+		LEFT JOIN `'._DB_PREFIX_.'address` a ON o.id_address_delivery = a.id_address
 		WHERE `invoice_date` BETWEEN "'.pSQL($date_from).' 00:00:00" AND "'.pSQL($date_to).' 23:59:59"
 		'.Shop::addSqlRestriction());
         $row['orders'] = round(100 * $row['orders'] / $total_orders, 1);
@@ -482,11 +470,11 @@ class AdminStatsControllerCore extends AdminStatsTabController
 			total_paid_tax_incl / o.conversion_rate as total_paid_tax_incl,
 			total_shipping_tax_excl / o.conversion_rate as total_shipping_tax_excl,
 			o.module,
-			hbd.id_country,
+			a.id_country,
 			o.id_currency,
 			c.id_reference as carrier_reference
 		FROM `'._DB_PREFIX_.'orders` o
-		LEFT JOIN `'._DB_PREFIX_.'address` hbd ON o.id_address_delivery = hbd.id_address
+		LEFT JOIN `'._DB_PREFIX_.'address` a ON o.id_address_delivery = a.id_address
 		LEFT JOIN `'._DB_PREFIX_.'carrier` c ON o.id_carrier = c.id_carrier
 		LEFT JOIN `'._DB_PREFIX_.'order_state` os ON o.current_state = os.id_order_state
 		WHERE `invoice_date` BETWEEN "'.pSQL($date_from).' 00:00:00" AND "'.pSQL($date_to).' 23:59:59" AND os.logable = 1
@@ -805,300 +793,8 @@ class AdminStatsControllerCore extends AdminStatsTabController
             if (isset($data)) {
                 $array['data'] = $data;
             }
-            die(json_encode($array));
+            die(Tools::jsonEncode($array));
         }
-        die(json_encode(array('has_errors' => true)));
-    }
-
-    public static function getArrivalsByDate($date, $idHotel = false)
-    {
-        $totalArrivals = Db::getInstance()->getValue(
-            'SELECT COUNT(hbd.`id_room`)
-            FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-            WHERE hbd.`is_refunded` = 0 AND hbd.`is_back_order` = 0
-            AND hbd.`date_from` BETWEEN "'.pSQL($date).' 00:00:00" AND "'.pSQL($date).' 23:59:59"'.
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-
-        $arrived = Db::getInstance()->getValue(
-            'SELECT COUNT(hbd.`id_room`)
-            FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-            WHERE hbd.`is_refunded` = 0 AND hbd.`is_back_order` = 0
-            AND hbd.`date_from` BETWEEN "'.pSQL($date).' 00:00:00" AND "'.pSQL($date).' 23:59:59"
-            AND hbd.`id_status` = '.(int) HotelBookingDetail::STATUS_CHECKED_IN.
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-
-        return array('arrived' => $arrived, 'total_arrivals' => $totalArrivals);
-    }
-
-    public static function getDeparturesByDate($date, $idHotel = false)
-    {
-        $totalDepartures = Db::getInstance()->getValue(
-            'SELECT COUNT(hbd.`id_room`)
-            FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-            WHERE hbd.`is_refunded` = 0 AND hbd.`is_back_order` = 0
-            AND hbd.`date_to` BETWEEN "'.pSQL($date).' 00:00:00" AND "'.pSQL($date).' 23:59:59"'.
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-
-        $departed = Db::getInstance()->getValue(
-            'SELECT COUNT(hbd.`id_room`)
-            FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-            WHERE hbd.`is_refunded` = 0 AND hbd.`is_back_order` = 0
-            AND hbd.`date_to` BETWEEN "'.pSQL($date).' 00:00:00" AND "'.pSQL($date).' 23:59:59"
-            AND hbd.`id_status` = '.(int) HotelBookingDetail::STATUS_CHECKED_OUT.
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-
-        return array('departed' => $departed, 'total_departures' => $totalDepartures);
-    }
-
-    public static function getBookingsByDate($date, $idHotel = false)
-    {
-        return Db::getInstance()->getValue(
-            'SELECT COUNT(DISTINCT hbd.`id_order`)
-            FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-            WHERE hbd.`date_add` BETWEEN "'.pSQL($date).' 00:00:00" AND "'.pSQL($date).' 23:59:59"'.
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-    }
-
-    public static function getStayOversByDate($date, $idHotel = false)
-    {
-        return Db::getInstance()->getValue(
-            'SELECT COUNT(hbd.`id_room`)
-            FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-            WHERE hbd.`is_refunded` = 0 AND hbd.`is_back_order` = 0
-            AND hbd.`id_status` = '.(int) HotelBookingDetail::STATUS_CHECKED_IN.'
-            AND hbd.`date_to` > "'.pSQL($date).' 00:00:00"'.
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-    }
-
-    public static function getCancelledBookingsByDate($date, $idHotel = false)
-    {
-        return Db::getInstance()->getValue(
-            'SELECT COUNT(o.`id_order`)
-            FROM `'._DB_PREFIX_.'orders` o
-            LEFT JOIN `'._DB_PREFIX_.'order_state` os ON (os.`id_order_state` = o.`current_state`)
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
-            WHERE o.`date_upd` BETWEEN "'.pSQL($date).' 00:00:00" AND "'.pSQL($date).' 23:59:59"
-            AND o.`current_state` = '.(int) Configuration::get('PS_OS_CANCELED').
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-    }
-
-    public static function getGuestsByDate($date, $idHotel = false)
-    {
-        return Db::getInstance()->getRow(
-            'SELECT SUM(hbd.`adult`) AS `adults`, SUM(hbd.`children`) AS `children`
-            FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-            WHERE hbd.`is_refunded` = 0 AND hbd.`is_back_order` = 0
-            AND hbd.`date_from` BETWEEN "'.pSQL($date).' 00:00:00" AND "'.pSQL($date).' 23:59:59"'.
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-    }
-
-    public static function getTotalRooms($idHotel = false)
-    {
-        return Db::getInstance()->getValue(
-            'SELECT COUNT(`id`) FROM `'._DB_PREFIX_.'htl_room_information` hri
-            WHERE 1'.HotelBranchInformation::addHotelRestriction($idHotel, 'hri')
-        );
-    }
-
-    public static function getOccupancyData($dateFrom, $dateTo, $idsHotel = false)
-    {
-        $occupancyData = array('count_total' => 0, 'count_occupied' => 0, 'count_available' => 0, 'count_unavailable' => 0);
-
-        $countTotal = Db::getInstance()->getValue(
-            'SELECT COUNT(hri.`id`)
-            FROM `'._DB_PREFIX_.'htl_room_information` hri
-            INNER JOIN `'._DB_PREFIX_.'htl_branch_info` hbi
-            ON (hbi.`id` = hri.`id_hotel`)
-            LEFT JOIN `'._DB_PREFIX_.'product` p
-            ON (p.`id_product` = hri.`id_product`)
-            WHERE p.`active` = 1'.
-            HotelBranchInformation::addHotelRestriction($idsHotel, 'hri')
-        );
-        $occupancyData['count_total'] = $countTotal;
-
-        $countOccupied = 0;
-        if ($dateFrom != $dateTo) {
-            $countOccupied = Db::getInstance()->getValue(
-                'SELECT COUNT(DISTINCT hbd.`id_room`)
-                FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-                LEFT JOIN `'._DB_PREFIX_.'htl_room_information` hri
-                ON (hri.`id` = hbd.`id_room`)
-                LEFT JOIN `'._DB_PREFIX_.'product` p
-                ON (p.`id_product` = hri.`id_product`)
-                WHERE p.`active` = 1
-                AND hbd.`date_from` < "'.pSQL($dateTo).' 00:00:00" AND hbd.`date_to` > "'.pSQL($dateFrom).' 00:00:00"'.
-                HotelBranchInformation::addHotelRestriction($idsHotel, 'hbd')
-            );
-        } else {
-            $countOccupied = Db::getInstance()->getValue(
-                'SELECT COUNT(DISTINCT hbd.`id_room`)
-                FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-                LEFT JOIN `'._DB_PREFIX_.'htl_room_information` hri
-                ON (hri.`id` = hbd.`id_room`)
-                LEFT JOIN `'._DB_PREFIX_.'product` p
-                ON (p.`id_product` = hri.`id_product`)
-                WHERE p.`active` = 1
-                AND hbd.`date_from` <= "'.pSQL($dateFrom).' 00:00:00" AND hbd.`date_to` > "'.pSQL($dateFrom).' 00:00:00"'.
-                HotelBranchInformation::addHotelRestriction($idsHotel, 'hbd')
-            );
-        }
-        $occupancyData['count_occupied'] = $countOccupied;
-
-        $countUnavailable = Db::getInstance()->getValue(
-            'SELECT COUNT(hri.`id`)
-            FROM `'._DB_PREFIX_.'htl_room_information` hri
-            INNER JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd
-            ON (hbd.`id` = hri.`id_hotel`)
-            LEFT JOIN `'._DB_PREFIX_.'product` p
-            ON (p.`id_product` = hri.`id_product`)
-            WHERE p.`active` = 1
-            AND hri.`id_status` != '.(int) HotelRoomInformation::STATUS_ACTIVE.
-            HotelBranchInformation::addHotelRestriction($idsHotel, 'hbd')
-        );
-        $occupancyData['count_unavailable'] = $countUnavailable;
-
-        $occupancyData['count_available'] = $countTotal - $countOccupied - $countUnavailable;
-
-        return $occupancyData;
-    }
-
-    public static function getAvailBarChartData($days, $dateFrom, $idHotel = null)
-    {
-
-        $availability_data = array();
-        $from = date('Y-m-d' ,strtotime($dateFrom." 00:00:00"));
-		$to = date('Y-m-d' ,strtotime($dateFrom."+".$days." day 23:59:59"));
-
-        for ($date = $from; $date < $to; $date = date('Y-m-d', strtotime('+1 day', strtotime($date)))) {
-            $bookedRoomSql = 'SELECT hri.`id` FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-            LEFT JOIN  `'._DB_PREFIX_.'htl_room_information` hri ON hbd.`id_room` = hri.`id`
-            WHERE hbd.`date_from` <= "'.pSQL($date).' 00:00:00"
-            AND hbd.`date_to` >= "'.pSQL(date('Y-m-d ', strtotime('+1 day', strtotime($date)))).' 00:00:00"
-            AND hbd.`is_refunded` = 0 AND hbd.`is_back_order` = 0'.
-            (!is_null($idHotel) ? HotelBranchInformation::addHotelRestriction($idHotel, 'hbd') : '');
-
-            $tempBookedRoomIds = Db::getInstance()->ExecuteS($bookedRoomSql);
-            $bookedRoomIds = array();
-            if (count($tempBookedRoomIds)) {
-                foreach ($tempBookedRoomIds as $value) {
-                   if ($value['id']) {
-                       $bookedRoomIds[] = $value['id'];
-                   }
-                }
-            } else {
-                $bookedRoomIds[] = "0";
-            }
-
-            $availRoomSql = 'SELECT COUNT("id") FROM `'._DB_PREFIX_.'htl_room_information` hri
-            WHERE hri.`id` NOT IN ('.implode(',', $bookedRoomIds).')
-            AND hri.`id_status` != '.(int) HotelRoomInformation::STATUS_INACTIVE.'
-            AND hri.`id_status` != '.(int) HotelRoomInformation::STATUS_TEMPORARY_INACTIVE.
-            (!is_null($idHotel) ? HotelBranchInformation::addHotelRestriction($idHotel, 'hri') : '');
-            $availRoomIds = Db::getInstance()->getValue($availRoomSql);
-
-            $availability_data["values"][] = array(strtotime($date), sprintf("%02d", $availRoomIds));
-        }
-
-        return $availability_data;
-    }
-
-    public static function getAverageDailyRate($dateFrom, $dateTo, $idHotel = false)
-    {
-        $result = Db::getInstance()->getRow(
-            'SELECT
-                SUM(hbd.`total_price_tax_excl`) AS `rooms_revenue`,
-                COUNT(hbd.`id_room`) AS `room_sold`
-            FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-            WHERE hbd.`is_refunded` = 0 AND hbd.`is_back_order` = 0
-            AND hbd.`date_add` BETWEEN "'.pSQL($dateFrom).' 00:00:00" AND "'.pSQL($dateTo).' 23:59:59"'.
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-        return Tools::displayPrice($result['rooms_revenue'] ? $result['rooms_revenue'] / $result['room_sold'] : 0);
-    }
-
-    public static function getCancellationRate($dateFrom, $dateTo, $idHotel = false)
-    {
-        $numAllOrders = Db::getInstance()->getValue(
-            'SELECT COUNT(o.`id_order`) FROM `'._DB_PREFIX_.'orders` o
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
-            WHERE o.`date_add` BETWEEN "'.pSQL($dateFrom).' 00:00:00" AND "'.pSQL($dateTo).' 23:59:59"'.
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-
-        $numCancelledOrders = Db::getInstance()->getValue(
-            'SELECT COUNT(o.`id_order`) FROM `'._DB_PREFIX_.'orders` o
-            LEFT JOIN `'._DB_PREFIX_.'order_state` os ON (os.`id_order_state` = o.`current_state`)
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
-            WHERE o.`date_add` BETWEEN "'.pSQL($dateFrom).' 00:00:00" AND "'.pSQL($dateTo).' 23:59:59"
-            AND o.`current_state` = '.(int)Configuration::get('PS_OS_CANCELED').
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-
-        if ($numCancelledOrders != 0) {
-            return round(($numCancelledOrders / $numAllOrders) * 100, 2).'%';
-        } else {
-            return '0.00%';
-        }
-    }
-
-    public static function getRevenue($dateFrom, $dateTo, $idHotel = false)
-    {
-        $result = Db::getInstance()->getValue(
-            'SELECT (SUM(o.`total_paid_tax_excl` / o.`conversion_rate`) - SUM(orr.`refunded_amount`))
-            FROM `'._DB_PREFIX_.'orders` o
-            LEFT JOIN `' ._DB_PREFIX_.'order_return` orr ON orr.`id_order` = o.`id_order`
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
-            WHERE o.`invoice_date` BETWEEN "'.pSQL($dateFrom).' 00:00:00" AND "'.pSQL($dateTo).' 23:59:59"'.
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-
-        return Tools::displayPrice($result ? $result : 0);
-    }
-
-    public static function getNightsStayed($dateFrom, $dateTo, $idHotel = false)
-    {
-        $dateFrom = date('Y-m-d H:i:s', strtotime($dateFrom));
-        $dateTo = date('Y-m-d H:i:s', strtotime($dateTo));
-        return Db::getInstance()->getValue(
-            'SELECT IFNULL(SUM(DATEDIFF(
-                IF (hbd.`id_status` = '.(int) HotelBookingDetail::STATUS_CHECKED_OUT.', IF ("'.$dateTo.'" > check_out, check_out, "'.$dateTo.'"), IF ("'.$dateTo.'" > date_to, date_to, "'.$dateTo.'")),
-                IF (hbd.`id_status` = '.(int) HotelBookingDetail::STATUS_CHECKED_OUT.', IF("'.$dateFrom.'" < check_in, check_in, "'.$dateFrom.'"), IF("'.$dateFrom.'" < date_from, date_from, "'.$dateFrom.'"))
-            )), 0)
-            FROM `'._DB_PREFIX_.'htl_booking_detail` hbd
-            WHERE hbd.`is_refunded` = 0 AND hbd.`is_back_order` = 0 AND
-            (IF (hbd.`id_status` = '.(int) HotelBookingDetail::STATUS_CHECKED_OUT.',
-                (hbd.`check_in` < \''.pSQL($dateTo).'\' AND hbd.`check_out` >= \''.pSQL($dateFrom).'\'),
-                (hbd.`date_from` < \''.pSQL($dateTo).'\' AND hbd.`date_to` >= \''.pSQL($dateFrom).'\')
-            ))'.
-            HotelBranchInformation::addHotelRestriction($idHotel, 'hbd')
-        );
-    }
-
-    public static function getRecentOrdersByHotel($idHotel = null, $limit = null)
-    {
-        return Db::getInstance()->executeS(
-            'SELECT *, (
-                SELECT osl.`name`
-                FROM `'._DB_PREFIX_.'order_state_lang` osl
-                WHERE osl.`id_order_state` = o.`current_state`
-                AND osl.`id_lang` = '.(int) Context::getContext()->language->id.'
-                LIMIT 1
-            ) AS `state_name`, o.`date_add` AS `date_add`, o.`date_upd` AS `date_upd`
-            FROM `'._DB_PREFIX_.'orders` o
-            LEFT JOIN `'._DB_PREFIX_.'customer` c ON (c.`id_customer` = o.`id_customer`)
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
-            WHERE 1'.HotelBranchInformation::addHotelRestriction($idHotel, 'hbd').'
-            GROUP BY o.`id_order`
-            ORDER BY o.`date_add` DESC'.
-            ((int) $limit ? ' LIMIT 0, '.(int) $limit : '')
-        );
+        die(Tools::jsonEncode(array('has_errors' => true)));
     }
 }

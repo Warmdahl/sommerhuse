@@ -22,17 +22,17 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-require_once dirname(__FILE__).'/../wktestimonialblock/classes/WkTestimonialBlockDb.php';
 require_once dirname(__FILE__).'/../wktestimonialblock/classes/WkHotelTestimonialData.php';
 require_once _PS_MODULE_DIR_.'hotelreservationsystem/define.php';
 
 class WkTestimonialBlock extends Module
 {
+    const INSTALL_SQL_FILE = 'install.sql';
     public function __construct()
     {
         $this->name = 'wktestimonialblock';
         $this->tab = 'front_office_features';
-        $this->version = '1.1.5';
+        $this->version = '1.1.4';
         $this->author = 'webkul';
         $this->need_instance = 0;
 
@@ -53,12 +53,22 @@ class WkTestimonialBlock extends Module
 
     public function hookDisplayHome()
     {
-        $this->context->controller->addCSS(_PS_JS_DIR_.'/owl-carousel/assets/owl.carousel.min.css');
-        $this->context->controller->addCSS(_PS_JS_DIR_.'/owl-carousel/assets/owl.theme.default.min.css');
-        $this->context->controller->addJS(_PS_JS_DIR_.'/owl-carousel/owl.carousel.min');
-
-        $this->context->controller->addCSS($this->_path.'/views/css/WkTestimonialBlockFront.css');
-        $this->context->controller->addJS($this->_path.'/views/js/WkTestimonialBlockFront.js');
+        // These files are already included in "wkabouthotelblock" module
+        if (!(Module::isInstalled('wkabouthotelblock') && Module::isEnabled('wkabouthotelblock'))) {
+            // owl.carousel Plug-in files
+            $this->context->controller->addCSS(
+                _PS_MODULE_DIR_.'hotelreservationsystem/libs/owl.carousel/assets/owl.carousel.min.css'
+            );
+            $this->context->controller->addCSS(
+                _PS_MODULE_DIR_.'hotelreservationsystem/libs/owl.carousel/assets/owl.theme.default.min.css'
+            );
+            $this->context->controller->addJS(
+                _PS_MODULE_DIR_.'hotelreservationsystem/libs/owl.carousel/owl.carousel.min.js'
+            );
+        }
+        /*---- Module Files ----*/
+        $this->context->controller->addCSS(_PS_MODULE_DIR_.$this->name.'/views/css/WkTestimonialBlockFront.css');
+        $this->context->controller->addJS(_PS_MODULE_DIR_.$this->name.'/views/js/WkTestimonialBlockFront.js');
 
         $HOTEL_TESIMONIAL_BLOCK_HEADING = Configuration::get(
             'HOTEL_TESIMONIAL_BLOCK_HEADING',
@@ -113,10 +123,23 @@ class WkTestimonialBlock extends Module
 
     public function install()
     {
-        $objTestimonialBlockDb = new WkTestimonialBlockDb();
+        if (!file_exists(dirname(__FILE__).'/'.self::INSTALL_SQL_FILE)) {
+            return false;
+        } elseif (!$sql = Tools::file_get_contents(dirname(__FILE__).'/'.self::INSTALL_SQL_FILE)) {
+            return false;
+        }
+        $sql = str_replace(array('PREFIX_',  'ENGINE_TYPE'), array(_DB_PREFIX_, _MYSQL_ENGINE_), $sql);
+        $sql = preg_split("/;\s*[\r\n]+/", $sql);
+
+        foreach ($sql as $query) {
+            if ($query) {
+                if (!Db::getInstance()->execute(trim($query))) {
+                    return false;
+                }
+            }
+        }
         $objTestimonialData = new WkHotelTestimonialData();
         if (!parent::install()
-            || !$objTestimonialBlockDb->createTables()
             || !$this->registerModuleHooks()
             || !$this->callInstallTab()
             || !$objTestimonialData->insertModuleDemoData()
@@ -179,6 +202,15 @@ class WkTestimonialBlock extends Module
         return true;
     }
 
+    public function deleteTables()
+    {
+        return Db::getInstance()->execute(
+            'DROP TABLE IF EXISTS
+            `'._DB_PREFIX_.'htl_testimonials_block_data`,
+            `'._DB_PREFIX_.'htl_testimonials_block_data_lang`'
+        );
+    }
+
     public function uninstallTab()
     {
         $moduleTabs = Tab::getCollectionFromModule($this->name);
@@ -193,10 +225,9 @@ class WkTestimonialBlock extends Module
 
     public function uninstall()
     {
-        $objTestimonialBlockDb = new WkTestimonialBlockDb();
         if (!parent::uninstall()
             || !$this->deleteTestimonialUserImage()
-            || !$objTestimonialBlockDb->dropTables()
+            || !$this->deleteTables()
             || !$this->uninstallTab()
             || !$this->deleteConfigKeys()
         ) {

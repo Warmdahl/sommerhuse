@@ -35,11 +35,13 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: UpdateStatementBuilder.php 830 2013-12-18 09:35:42Z phosco@gmx.de $
  * 
  */
 
-namespace PHPSQLParser\builders;
+require_once dirname(__FILE__) . '/WhereBuilder.php';
+require_once dirname(__FILE__) . '/SetBuilder.php';
+require_once dirname(__FILE__) . '/UpdateBuilder.php';
 
 /**
  * This class implements the builder for the whole Update statement. You can overwrite
@@ -49,7 +51,7 @@ namespace PHPSQLParser\builders;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class UpdateStatementBuilder implements Builder {
+class UpdateStatementBuilder {
 
     protected function buildWHERE($parsed) {
         $builder = new WhereBuilder();
@@ -66,7 +68,7 @@ class UpdateStatementBuilder implements Builder {
         return $builder->build($parsed);
     }
 
-    public function build(array $parsed) {
+    public function build($parsed) {
         $sql = $this->buildUPDATE($parsed['UPDATE']) . " " . $this->buildSET($parsed['SET']);
         if (isset($parsed['WHERE'])) {
             $sql .= " " . $this->buildWHERE($parsed['WHERE']);

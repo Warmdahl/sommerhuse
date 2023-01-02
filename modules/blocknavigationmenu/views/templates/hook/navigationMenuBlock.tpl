@@ -17,7 +17,7 @@
 *  @license   https://store.webkul.com/license.html
 *}
 
-<div class="header-top-item">
+<div class="pull-right clearfix nav_menu_padding">
 	<button type="button" class="nav_toggle">
 		<span class="icon-bar"></span>
 		<span class="icon-bar"></span>

@@ -76,7 +76,7 @@ class TreeToolbarSearchCore extends TreeToolbarButtonCore implements
         $html = '';
 
         foreach ($data as $item) {
-            $html .= json_encode($item).',';
+            $html .= Tools::jsonEncode($item).',';
             if (array_key_exists('children', $item) && !empty($item['children'])) {
                 $html .= $this->_renderData($item['children']);
             }

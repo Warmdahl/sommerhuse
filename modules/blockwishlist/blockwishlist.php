@@ -24,22 +24,22 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-if (!defined('_PS_VERSION_')) {
+if (!defined('_PS_VERSION_'))
 	exit;
-}
 
-include_once (dirname(__FILE__).'/classes/BlockWishlistDb.php');
-include_once (dirname(__FILE__).'/WishList.php');
+include_once(dirname(__FILE__).'/WishList.php');
 
 class BlockWishList extends Module
 {
+	const INSTALL_SQL_FILE = 'install.sql';
+
 	private $html = '';
 
 	public function __construct()
 	{
 		$this->name = 'blockwishlist';
 		$this->tab = 'front_office_features';
-		$this->version = '1.3.2';
+		$this->version = '1.3.1';
 		$this->author = 'PrestaShop';
 		$this->need_instance = 0;
 
@@ -55,11 +55,23 @@ class BlockWishList extends Module
 		$this->html = '';
 	}
 
-	public function install()
+	public function install($delete_params = true)
 	{
-		$objBlockWishListDb = new BlockWishlistDb();
+		if ($delete_params)
+		{
+			if (!file_exists(dirname(__FILE__).'/'.self::INSTALL_SQL_FILE))
+				return (false);
+			else if (!$sql = file_get_contents(dirname(__FILE__).'/'.self::INSTALL_SQL_FILE))
+				return (false);
+			$sql = str_replace(array('PREFIX_', 'ENGINE_TYPE'), array(_DB_PREFIX_, _MYSQL_ENGINE_), $sql);
+			$sql = preg_split("/;\s*[\r\n]+/", $sql);
+			foreach ($sql as $query)
+				if ($query)
+					if (!Db::getInstance()->execute(trim($query)))
+						return false;
+		}
+
 		if (!parent::install() ||
-			!$objBlockWishListDb->createTables() ||
 			!$this->registerHook('rightColumn') ||
 			!$this->registerHook('productActions') ||
 			!$this->registerHook('cart') ||
@@ -67,24 +79,19 @@ class BlockWishList extends Module
 			!$this->registerHook('header') ||
 			!$this->registerHook('adminCustomers') ||
 			!$this->registerHook('displayProductListFunctionalButtons') ||
-			!$this->registerHook('top')
-		) {
+			!$this->registerHook('top'))
 			return false;
-		}
 		/* This hook is optional */
 		$this->registerHook('displayMyAccountBlock');
 
 		return true;
 	}
 
-	public function uninstall($delete_data = true)
+	public function uninstall($delete_params = true)
 	{
-		$objBlockWishListDb = new BlockWishlistDb();
-		if (!parent::uninstall()
-			|| ($delete_data && !$objBlockWishListDb->dropTables())
-		) {
+		if (($delete_params && !$this->deleteTables()) || !parent::uninstall())
 			return false;
-		}
+
 		return true;
 	}
 
@@ -101,12 +108,11 @@ class BlockWishList extends Module
 
 	public function reset()
 	{
-		if (!$this->uninstall(false)) {
+		if (!$this->uninstall(false))
 			return false;
-		}
-		if (!$this->install()) {
+		if (!$this->install(false))
 			return false;
-		}
+
 		return true;
 	}
 

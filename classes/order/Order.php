@@ -40,9 +40,6 @@ class OrderCore extends ObjectModel
     /** @var int Invoice address id */
     public $id_address_invoice;
 
-    /** @var int Hotel address id */
-    public $id_address_tax;
-
     public $id_shop_group;
 
     public $id_shop;
@@ -199,7 +196,6 @@ class OrderCore extends ObjectModel
         'fields' => array(
             'id_address_delivery' =>        array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
             'id_address_invoice' =>        array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
-            'id_address_tax' =>        array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
             'id_cart' =>                    array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
             'id_currency' =>                array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true),
             'id_shop_group' =>                array('type' => self::TYPE_INT, 'validate' => 'isUnsignedId'),
@@ -260,6 +256,7 @@ class OrderCore extends ObjectModel
             'id_currency' => array('xlink_resource'=> 'currencies'),
             'id_lang' => array('xlink_resource'=> 'languages'),
             'id_customer' => array('xlink_resource'=> 'customers'),
+            'id_carrier' => array('xlink_resource'=> 'carriers'),
             'current_state' => array(
                 'xlink_resource'=> 'order_states',
                 'setter' => 'setWsCurrentState'
@@ -267,33 +264,31 @@ class OrderCore extends ObjectModel
             'module' => array('required' => true),
             'invoice_number' => array(),
             'invoice_date' => array(),
+            // 'delivery_number' => array(),
+            // 'delivery_date' => array(),
             'valid' => array(),
             'date_add' => array(),
             'date_upd' => array(),
-        ),
-        'hidden_fields' => array (
-            'total_shipping',
-            'total_shipping_tax_incl',
-            'total_shipping_tax_excl',
-            'carrier_tax_rate',
-            'id_carrier',
-            'total_wrapping',
-            'total_wrapping_tax_incl',
-            'total_wrapping_tax_excl',
-            'delivery_date',
-            'delivery_number',
-            'shipping_number',
-            'id_shop',
-            'id_shop_group',
-            'recyclable',
-            'gift',
-            'gift_message',
-            'mobile_theme',
-            'round_mode',
-            'round_type',
-            'reference',
+            // 'shipping_number' => array(
+            //     'getter' => 'getWsShippingNumber',
+            //     'setter' => 'setWsShippingNumber'
+            // ),
         ),
         'associations' => array(
+            // 'order_rows' => array('resource' => 'order_row', 'setter' => false, 'virtual_entity' => true,
+            //     'fields' => array(
+            //         'id' =>  array(),
+            //         'product_id' => array('required' => true),
+            //         'product_attribute_id' => array('required' => true),
+            //         'product_quantity' => array('required' => true),
+            //         'product_name' => array('setter' => false),
+            //         'product_reference' => array('setter' => false),
+            //         'product_ean13' => array('setter' => false),
+            //         'product_upc' => array('setter' => false),
+            //         'product_price' => array('setter' => false),
+            //         'unit_price_tax_incl' => array('setter' => false),
+            //         'unit_price_tax_excl' => array('setter' => false),
+            //     )),
             'bookings' => array(
                 'resource' => 'booking',
                 'setter' => false,
@@ -751,7 +746,6 @@ class OrderCore extends ObjectModel
 
     public function getTaxesAverageUsed()
     {
-        // @todo should use order table to get tax average
         return Cart::getTaxesAverageUsed((int)$this->id_cart);
     }
 
@@ -1354,7 +1348,7 @@ class OrderCore extends ObjectModel
             return;
         }
 
-        $address = new Address((int)$this->id_address_tax);
+        $address = new Address((int)$this->{Configuration::get('PS_TAX_ADDRESS_TYPE')});
         $carrier = new Carrier((int)$this->id_carrier);
         $tax_calculator = $carrier->getTaxCalculator($address);
         $order_invoice->total_discount_tax_excl = $this->total_discounts_tax_excl;
@@ -1606,7 +1600,6 @@ class OrderCore extends ObjectModel
     {
         /** @var PaymentModule $payment_module */
         $payment_module = Module::getInstanceByName($this->module);
-        $payment_module->orderSource = $this->source;
         $customer = new Customer($this->id_customer);
         $payment_module->validateOrder($this->id_cart, Configuration::get('PS_OS_WS_PAYMENT'), $this->total_paid, $this->payment, null, array(), null, false, $customer->secure_key);
         $this->id = $payment_module->currentOrder;
@@ -1918,22 +1911,18 @@ class OrderCore extends ObjectModel
     }
 
     /**
-     * Get the sum of total_paid_tax_incl/advance_paid_amount of the orders with similar reference
-     * @param integer $getAdvancePaid (send 1 if want total advance paid amount)
+     * Get the sum of total_paid_tax_incl of the orders with similar reference
+     *
+     * @since 1.5.0.1
      * @return float
      */
-    public function getOrdersTotalPaid($getAdvancePaid = 0)
+    public function getOrdersTotalPaid()
     {
-        $sql = 'SELECT';
-        if ($getAdvancePaid) {
-            $sql .= ' SUM(advance_paid_amount)';
-        } else {
-            $sql .= ' SUM(total_paid_tax_incl)';
-        }
-        $sql .=  'FROM `'._DB_PREFIX_.'orders` WHERE `reference` = \''.pSQL($this->reference).
-        '\' AND `id_cart` = '.(int)$this->id_cart;
-
-        return Db::getInstance()->getValue($sql);
+        return Db::getInstance()->getValue('
+			SELECT SUM(total_paid_tax_incl)
+			FROM `'._DB_PREFIX_.'orders`
+			WHERE `reference` = \''.pSQL($this->reference).'\'
+			AND `id_cart` = '.(int)$this->id_cart);
     }
 
     /**
@@ -2487,7 +2476,7 @@ class OrderCore extends ObjectModel
                     if ($refundFlag) {
                         foreach ($refundBookings as $refundRow) {
                             if (Validate::isLoadedObject(
-                                $objReturnState = new OrderReturnState($refundRow['state']
+                                $objReturnState = new OrderReturnState($refundRow['current_state']
                             ))) {
                                 if ($refundFlag == OrderReturnState::ORDER_RETURN_STATE_FLAG_REFUNDED
                                     && !$objReturnState->refunded

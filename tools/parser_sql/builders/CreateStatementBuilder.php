@@ -35,11 +35,13 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: CreateStatementBuilder.php 930 2014-01-08 13:07:55Z phosco@gmx.de $
  * 
  */
 
-namespace PHPSQLParser\builders;
+require_once dirname(__FILE__) . '/LikeBuilder.php';
+require_once dirname(__FILE__) . '/SelectStatementBuilder.php';
+require_once dirname(__FILE__) . '/CreateBuilder.php';
 
 /**
  * This class implements the builder for the whole Create statement. You can overwrite
@@ -49,7 +51,7 @@ namespace PHPSQLParser\builders;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class CreateStatementBuilder implements Builder {
+class CreateStatementBuilder {
 
     protected function buildLIKE($parsed) {
         $builder = new LikeBuilder();
@@ -65,8 +67,8 @@ class CreateStatementBuilder implements Builder {
         $builder = new CreateBuilder();
         return $builder->build($parsed);
     }
-
-    public function build(array $parsed) {
+    
+    public function build($parsed) {
         $sql = $this->buildCREATE($parsed);
         if (isset($parsed['LIKE'])) {
             $sql .= " " . $this->buildLIKE($parsed['LIKE']);

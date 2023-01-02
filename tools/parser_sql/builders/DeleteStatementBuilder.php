@@ -35,11 +35,13 @@
  * @author    André Rothe <andre.rothe@phosco.info>
  * @copyright 2010-2014 Justin Swanhart and André Rothe
  * @license   http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
- * @version   SVN: $Id$
+ * @version   SVN: $Id: DeleteStatementBuilder.php 830 2013-12-18 09:35:42Z phosco@gmx.de $
  * 
  */
 
-namespace PHPSQLParser\builders;
+require_once dirname(__FILE__) . '/WhereBuilder.php';
+require_once dirname(__FILE__) . '/FromBuilder.php';
+require_once dirname(__FILE__) . '/DeleteBuilder.php';
 
 /**
  * This class implements the builder for the whole Delete statement. You can overwrite
@@ -49,7 +51,7 @@ namespace PHPSQLParser\builders;
  * @license http://www.debian.org/misc/bsd.license  BSD License (3 Clause)
  *  
  */
-class DeleteStatementBuilder implements Builder {
+class DeleteStatementBuilder {
 
     protected function buildWHERE($parsed) {
         $builder = new WhereBuilder();
@@ -65,14 +67,14 @@ class DeleteStatementBuilder implements Builder {
         $builder = new DeleteBuilder();
         return $builder->build($parsed);
     }
-
-    public function build(array $parsed) {
-        $sql = $this->buildDELETE($parsed['DELETE']) . " " . $this->buildFROM($parsed['FROM']);
+    
+    public function processDeleteStatement($parsed) {
+        $sql = $this->buildDELETE($parsed['DELETE']) . " " . $this->processFROM($parsed['FROM']);
         if (isset($parsed['WHERE'])) {
-            $sql .= " " . $this->buildWHERE($parsed['WHERE']);
+            $sql .= " " . $this->processWHERE($parsed['WHERE']);
         }
         return $sql;
     }
-
+    
 }
 ?>

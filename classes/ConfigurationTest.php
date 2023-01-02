@@ -31,7 +31,7 @@ class ConfigurationTestCore
         '/classes/log/index.php',
         '/classes/cache/index.php',
         '/config/index.php',
-        '/tools/tar/Tar.php',
+        '/tools/tar/Archive_Tar.php',
         '/tools/pear/PEAR.php',
         '/controllers/admin/AdminLoginController.php',
         '/css/index.php',
@@ -83,11 +83,10 @@ class ConfigurationTestCore
                 ),
                 'phpversion' => false,
                 'gd' => false,
-                'pdo_mysql' => false,
+                'mysql_support' => false,
                 'config_dir' => 'config',
                 'files' => false,
                 'mails_dir' => 'mails',
-                'openssl' => false,
                 'curl' => false,
                 'soap' => false,
                 'simplexml' => false,
@@ -95,7 +94,6 @@ class ConfigurationTestCore
                 'upload_max_filesize' => false,
                 'max_execution_time' => false,
                 'fopen' => false,
-                'zip' => false,
             ));
         }
 
@@ -114,9 +112,11 @@ class ConfigurationTestCore
             'new_phpversion' => false,
             'register_globals' => false,
             'gz' => false,
+            'mcrypt' => false,
             'mbstring' => false,
             'magicquotes' => false,
             'dom' => false,
+            'pdo_mysql' => false,
         );
     }
 
@@ -145,20 +145,17 @@ class ConfigurationTestCore
 
     public static function test_phpversion()
     {
-        return (
-            version_compare(substr(phpversion(), 0, 5), '5.6.0', '>=')
-            && version_compare(substr(phpversion(), 0, 5), '8.0', '<')
-        );
+        return version_compare(substr(phpversion(), 0, 5), '5.4.0', '>=');
     }
 
     public static function test_new_phpversion()
     {
-        return version_compare(substr(phpversion(), 0, 5), '5.6.0', '>=');
+        return version_compare(substr(phpversion(), 0, 5), '5.4.0', '>=');
     }
 
     public static function test_mysql_support()
     {
-        return extension_loaded('mysqli') || extension_loaded('pdo_mysql');
+        return extension_loaded('mysql') || extension_loaded('mysqli') || extension_loaded('pdo_mysql');
     }
 
     public static function test_pdo_mysql()
@@ -183,7 +180,7 @@ class ConfigurationTestCore
 
     public static function test_magicquotes()
     {
-        return function_exists('get_magic_quotes_gpc') ? !get_magic_quotes_gpc() : true;
+        return !get_magic_quotes_gpc();
     }
 
     public static function test_upload()
@@ -217,12 +214,6 @@ class ConfigurationTestCore
         }
         return false;
     }
-
-    public static function test_zip()
-    {
-        return extension_loaded('zip');
-    }
-
 
     public static function test_fopen()
     {
@@ -403,9 +394,9 @@ class ConfigurationTestCore
         return function_exists('mb_strtolower');
     }
 
-    public static function test_openssl()
+    public static function test_mcrypt()
     {
-        return function_exists('openssl_encrypt');
+        return function_exists('mcrypt_encrypt');
     }
 
     public static function test_sessions()

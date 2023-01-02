@@ -451,7 +451,7 @@ class AdminGroupsControllerCore extends AdminController
             $result['discount'] = $category_reduction;
             $result['hasError'] = false;
         }
-        die(json_encode($result));
+        die(Tools::jsonEncode($result));
     }
 
     /**
@@ -559,7 +559,7 @@ class AdminGroupsControllerCore extends AdminController
             '<b>'.$default->name[$this->context->language->id].'</b>'
         );
 
-        $this->displayInformation($this->l('QloApps has three default customer groups:'));
+        $this->displayInformation($this->l('Qloapps has three default customer groups:'));
         $this->displayInformation($unidentified_group_information);
         $this->displayInformation($guest_group_information);
         $this->displayInformation($default_group_information);

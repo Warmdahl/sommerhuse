@@ -150,11 +150,13 @@
             <hook module="wkfooterpaymentinfoblockcontainer" hook="displayFooter" position="4"/>
             <hook module="wkfooteraboutblock" hook="displayFooterMostLeftBlock" position="3"/>
             <hook module="wkfooteraboutblock" hook="displayFooterPaymentInfo" position="1"/>
+            <hook module="wkfooterpaymentblock" hook="displayAddModuleSettingLink" position="6"/>
             <hook module="wkfooterpaymentblock" hook="displayFooterPaymentInfo" position="2"/>
             <hook module="wkfooternotificationblock" hook="displayFooter" position="5"/>
             <hook module="blocknavigationmenu" hook="displayTop" position="2"/>
             <hook module="blocknavigationmenu" hook="displayFooter" position="6"/>
             <hook module="blocknavigationmenu" hook="actionObjectLanguageAddAfter" position="6"/>
+            <hook module="blocknavigationmenu" hook="displayAddModuleSettingLink" position="7"/>
             <hook module="blocknavigationmenu" hook="displayDefaultNavigationHook" position="1"/>
             <hook module="blocknavigationmenu" hook="displayNavigationHook" position="1"/>
             <hook module="blocknewsletter" hook="Header" position="3"/>
@@ -221,7 +223,7 @@
         <image name="small_default" width="98" height="98" products="true" categories="false" manufacturers="true" suppliers="true" scenes="false"/>
         <image name="medium_default" width="125" height="125" products="true" categories="true" manufacturers="true" suppliers="true" scenes="false"/>
         <image name="home_default" width="250" height="250" products="true" categories="false" manufacturers="false" suppliers="false" scenes="false"/>
-        <image name="large_default" width="720" height="720" products="true" categories="false" manufacturers="true" suppliers="true" scenes="false"/>
+        <image name="large_default" width="458" height="458" products="true" categories="false" manufacturers="true" suppliers="true" scenes="false"/>
         <image name="thickbox_default" width="800" height="800" products="true" categories="false" manufacturers="false" suppliers="false" scenes="false"/>
         <image name="category_default" width="870" height="217" products="false" categories="true" manufacturers="false" suppliers="false" scenes="false"/>
         <image name="scene_default" width="870" height="270" products="false" categories="false" manufacturers="false" suppliers="false" scenes="true"/>

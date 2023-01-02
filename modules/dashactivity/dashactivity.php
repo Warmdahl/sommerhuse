@@ -36,7 +36,7 @@ class Dashactivity extends Module
     {
         $this->name = 'dashactivity';
         $this->tab = 'dashboard';
-        $this->version = '1.0.1';
+        $this->version = '1.0.0';
         $this->author = 'PrestaShop';
         $this->push_filename = _PS_CACHE_DIR_.'push/activity';
         $this->allow_push = true;
@@ -78,9 +78,8 @@ class Dashactivity extends Module
                 array(
                     _PS_JS_DIR_.'date.js',
                     _PS_JS_DIR_.'tools.js'
-                    ) // retro compat themes 1.5
-                );
-            $this->context->controller->addCSS($this->_path.'views/css/'.$this->name.'.css');
+                ) // retro compat themes 1.5
+            );
         }
     }
 
@@ -214,10 +213,8 @@ class Dashactivity extends Module
 			SELECT COUNT(*)
 			FROM `'._DB_PREFIX_.'orders` o
 			LEFT JOIN `'._DB_PREFIX_.'order_state` os ON (o.current_state = os.id_order_state)
-            LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = o.`id_order`)
 			WHERE os.paid = 1 AND os.shipped = 0
-			'.Shop::addSqlRestriction(Shop::SHARE_ORDER).
-            (!is_null($params['id_hotel']) ? HotelBranchInformation::addHotelRestriction($params['id_hotel'], 'hbd') : '')
+			'.Shop::addSqlRestriction(Shop::SHARE_ORDER)
         );
 
         $abandoned_cart = Db::getInstance(_PS_USE_SQL_SLAVE_)->getValue('
