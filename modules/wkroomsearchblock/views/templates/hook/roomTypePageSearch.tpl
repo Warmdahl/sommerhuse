@@ -36,7 +36,7 @@
 						</div>
 					</div>
 					<div class="col-sm-3 form-group">
-						<button class="btn btn-default modify_roomtype_search_btn pull-right">{l s='Rediger søgning' mod='wkroomsearchblock'}</button>
+						<button class="btn btn-default modify_roomtype_search_btn pull-right">{l s='Modify Search' mod='wkroomsearchblock'}</button>
 					</div>
 				</div>
 			</div>
