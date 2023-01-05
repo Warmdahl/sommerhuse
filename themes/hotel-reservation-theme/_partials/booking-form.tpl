@@ -100,7 +100,7 @@
                             <p id="add_to_cart" class="buttons_bottom_block no-print">
                                 <button type="submit" name="Submit" class="exclusive book_now_submit">
                                     <span>
-                                        {if isset($content_only) && $content_only && (isset($product->customization_required) && $product->customization_required)}{l s='Customize'}{else}{l s='Book Now'}{/if}
+                                        {if isset($content_only) && $content_only && (isset($product->customization_required) && $product->customization_required)}{l s='Customize'}{else}{l s='Reserver'}{/if}
                                     </span>
                                 </button>
                             </p>
