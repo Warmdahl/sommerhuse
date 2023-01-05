@@ -1508,7 +1508,7 @@ Quick View Styles
   transform: scale(1.05); }
 
 .room_info_hotel_images_wrap .btn-show-more-images {
-  background: #379BF0;
+  background: var(--primary-color);
   padding: 10px 25px;
   border: none;
   border-radius: 2px;
