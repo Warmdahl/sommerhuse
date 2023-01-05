@@ -1,6 +1,6 @@
 :root {
-    --primary-color: var(--primary-color);
-    --secondary-color: var(--primary-color);
-    --borderPrimary-color: var(--primary-color);
+    --primary-color: #C6745D;
+    --secondary-color: #B84D29;
+    --borderPrimary-color: #C6745D;
     --accent-color: #c0392b;
 }
