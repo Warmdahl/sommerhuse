@@ -1155,7 +1155,7 @@ Quick View Styles
     color: #404040;
     font-size: 18px;
     font-weight: 700;
-    border-bottom: 2px solid #379aef;}
+    border-bottom: 2px solid var(--primary-color);}
 .product_description_tabs li.active {
   font-family: inherit;
   color: #404040;
@@ -1167,7 +1167,7 @@ Quick View Styles
     top: 36px;
     width: 100%;
     height: 4px;
-    background: #379aef;}
+    background: var(--primary-color);}
 .product_description_tabs_contents
 {
   margin-top: 0px!important;
