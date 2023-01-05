@@ -16,16 +16,16 @@
 * @copyright 2010-2022 Webkul IN
 * @license LICENSE.txt
 */
-
+@import url("../../../../../themes/main.css");
 .btn-review {
-    background-color: #1292FF;
-    border: 1px solid #1292FF;
+    background-color: var(--primary-color);
+    border: 1px solid var(--primary-color);
     color: #FFF;
 }
 
 .btn-review:hover {
-    border: 1px solid #1292FF;
-    background-color: #1292FF;
+    border: 1px solid var(--primary-color);
+    background-color: var(--primary-color);
     color: #FFF;
     opacity: 0.8;
 }
@@ -84,8 +84,8 @@
 }
 
 #add-review-popup .review-actions-wrap .btn-review.disabled {
-    background-color: #1292FF;
-    border: 1px solid #1292FF;
+    background-color: var(--primary-color);
+    border: 1px solid var(--primary-color);
 }
 
 #add-review-popup .image-input-btn {

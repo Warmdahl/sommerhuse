@@ -17,7 +17,7 @@
 *  @license   https://store.webkul.com/license.html
 */
 
-
+@import url("../../../../../themes/main.css");
 .header-rmsearch-container {
   position: absolute;
   bottom: 0;
@@ -59,7 +59,7 @@
   text-align: left;
   font-size: 22px;}
 .fancy_search_header_xs hr {
-    border: 1px solid #379bf0;
+    border: 1px solid var(--primary-color);
     float: left;
     margin-top: 5px;
     width: 125px;}
@@ -73,7 +73,7 @@
   height: 55px;}
 #search_hotel_block_form #search_room_submit {
   padding: 5px;
-  box-shadow: 0 0 20px 0 rgba(18,146,255,0.42);}
+  box-shadow: 0 0 20px 0 var(--accent-color);}
 @media (min-width: 768px) {
   #search_hotel_block_form .input-date {
     background-position: 92% 50%;}

@@ -16,14 +16,14 @@
 * @copyright 2010-2022 Webkul IN
 * @license LICENSE.txt
 */
-
+@import url("../../../../../themes/main.css");
 #hotel-reviews {
     padding: 20px;
 }
 
 /* commons - start */
 #hotel-reviews .btn-primary-review {
-    background: #379BF0;
+    background: var(--primary-color);
     padding: 10px 25px;
     border: none;
     color: #fff;

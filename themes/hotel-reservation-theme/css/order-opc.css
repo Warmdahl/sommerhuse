@@ -1,6 +1,7 @@
 /********************************************************
 			One-Page Checkout Styles
 ********************************************************/
+@import url("../../../../../themes/main.css");
 .columns-container {
 	background-color: #FAFAFA;
 }
@@ -241,7 +242,7 @@
 	color: #777777;}
 .room_price_detail_block .open_rooms_extra_demands {
 	font-weight: 600;
-	color: #0000FF;}
+	color: var(--accent-color);}
 .order-detail-content .total_price_block {
 	display: inline-block;
     padding: 10px 15px 0px;
@@ -316,7 +317,7 @@
 	padding: 11px;
 }
 #order-opc .order_opc_ul li:hover, #order-opc .order_opc_ul li:focus, #order-opc .order_opc_ul li:active {
-	background-color: #379bf0;
+	background-color: var(--primary-color);
 	color: #FFFFFF;
 }
 #order-opc .already_registered_block {
@@ -325,7 +326,7 @@
 	color: #333333;
 }
 #order-opc .already_registered_block #openLoginFormBlock {
-	color: #003AEF;
+	color: var(--accent-color);
 	font-weight: 600;
 }
 
@@ -335,7 +336,7 @@
 }
 
 #order-opc #login_form_content #idAccountChoice {
-	color: #003AEF;
+	color: var(--accent-color);
 	font-weight: 600;
 }
 
@@ -351,7 +352,7 @@
 }
 #order-opc .step-edit > a {
 	font-size: 14px;
-	color: #0000FF;
+	color: var(--accent-color);
 	text-align: right;
 }
 
@@ -398,7 +399,7 @@
 #order-opc .avail_vouchers_block .avail_voucher_name>.voucher_name {
 	cursor: pointer;
     font-size: 14px;
-    color: #0000FF;
+    color: var(--accent-color);
 }
 #order-opc .avail_vouchers_block .avail_voucher_des {
 	font-size: 12px;
@@ -420,7 +421,7 @@
 }
 #order-opc .cart_total_detail_block .cart_final_total_block > .cart_total_values {
 	font-size: 28px;
-	color: #003AEF;
+	color: var(--accent-color);
 }
 #order-opc .opc_advance_payment_block {
 	margin-bottom: 30px;
@@ -592,19 +593,19 @@
 	font-weight: 600;
 }
 #order-opc .opc-btn-primary {
-	background-color: #1292FF;
+	background-color: var(--primary-color);
 	color: #FFFFFF;
 }
 #order-opc .opc-btn-default {
-	border: 1px solid #1292FF;
+	border: 1px solid var(--primary-color);
 	background-color: #fff;
-	color: #1292FF;
+	color: var(--secondary-color);
 }
 #order-opc .opc-button {
 	padding: 2px 0 0 0;
 }
 #order-opc .button-medium {
-	background-color: #1292FF;
+	background-color: var(--secondary-color);
 	box-shadow: 0 0px 20px 0 rgba(0,0,0,0.34);
 	border-radius: 2px;
 	padding: 0px 50px;}
@@ -623,7 +624,7 @@
 .room_extra_demands .open_rooms_extra_demands {
 	font-size:12px;
 	font-weight: 600;
-	color: #0000FF;}
+	color: var(--accent-color);}
 #rooms_extra_demands .demand_header {
 	padding-bottom: 15px;}
 #rooms_extra_demands .room_demand_detail .demand_detail_price_block {

@@ -1,3 +1,4 @@
+@import url("../../../../../themes/main.css");
 .margin-top-50 {
   margin-top: 50px;
 }
@@ -65,7 +66,7 @@
   padding: 11px;
 }
 .htl-contact-page  .contact_type_ul li:hover, .htl-contact-page  .contact_type_ul li:focus, .htl-contact-page  .contact_type_ul li:active {
-  background-color: #379bf0;
+  background-color: var(--primary-color);
   color: #FFFFFF;
 }
 .htl-contact-page .contact_btn {
@@ -118,7 +119,7 @@
   border-bottom: 1px solid rgba(0, 0, 0, 1);
 }
 .htl-contact-page span.action {
-  background:#379bf0!important;
+  background:var(--primary-color)!important;
 }
 .htl-contact-page .hotel-address-container {
   border-radius: 4px;
@@ -193,7 +194,7 @@
   font-weight: 400;
 }
 .contact-subdiv p i {
-  color: #2F85CE;
+  color: var(--secondary-color);
 }
 .contact_input {
   color: #9a9a9a;
@@ -261,16 +262,16 @@
 
 .gm-btn-get-directions {
   text-decoration: none;
-  color: #427fed;
+  color: var(--primary-color);
   font-weight: bold;
 }
 
 .gm-btn-get-directions:hover {
   text-decoration: underline;
-  color: #427fed;
+  color: var(--primary-color);
 }
 
 .gm-btn-get-directions:focus {
   outline: none;
-  color: #427fed;
+  color: var(--primary-color);
 }
