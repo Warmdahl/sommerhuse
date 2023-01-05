@@ -16,9 +16,9 @@
 * @copyright 2010-2022 Webkul IN
 * @license LICENSE.txt
 */
-
+@import url("../../../../../themes/main.css");
 .nav_toggle {
-  background-color: #379BF0;
+  background-color: var(--primary-color);
   border: none;
   position: relative;
   padding: 11px 10px;
@@ -64,7 +64,7 @@
   font-size: 20px;
   color: #ffffff;
   cursor: pointer;
-  background-color: #379bf0;
+  background-color: var(--primary-color);
   height: 50px;
   padding: 15px;
   text-align: center;

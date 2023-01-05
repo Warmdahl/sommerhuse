@@ -370,7 +370,7 @@
       #layer_cart .layer_cart_cart .button-container .btn {
         margin-bottom: 10px; }
       #layer_cart .layer_cart_cart .button-container a.button.button-medium {
-        border-color: #51e4ff #338fdd #2f85ce #51e4ff;
+        border-color: var(--borderPrimary-color) var(--accent-color) var(--primary-color) var(--secondary-color);
         border-style: solid;
         border-width: 1px;
         font-weight: 600;

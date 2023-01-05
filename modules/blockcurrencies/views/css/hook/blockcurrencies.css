@@ -16,7 +16,7 @@
 * @copyright 2010-2022 Webkul IN
 * @license LICENSE.txt
 */
-
+@import url("../../../../../themes/main.css");
 .currencies-block-wrap button.dropdown-toggle {
     padding: 0;
     background-color: transparent;
@@ -48,6 +48,6 @@
 }
 
 .fancybox-blockcurrencies .list-group-item.active {
-    background-color: #379BF0;
+    background-color: var(--primary-color);
 }
 /* popup - end */
