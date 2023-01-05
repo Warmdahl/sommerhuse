@@ -347,7 +347,7 @@ class HotelReservationSystem extends Module
     public function callInstallTab()
     {
         $this->installTab('AdminHotelReservationSystemManagement', 'Hotel Reservation System');
-        $this->installTab('AdminHotelRoomsBooking', 'Book Now', 'AdminHotelReservationSystemManagement');
+        $this->installTab('AdminHotelRoomsBooking', 'Reserver', 'AdminHotelReservationSystemManagement');
         $this->installTab('AdminHotelConfigurationSetting', 'Settings', 'AdminHotelReservationSystemManagement');
         $this->installTab('AdminAddHotel', 'Manage Hotel', 'AdminHotelReservationSystemManagement');
         $this->installTab('AdminHotelFeatures', 'Manage Hotel Features', 'AdminHotelReservationSystemManagement');
